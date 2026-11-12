@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# IDE and user-specific state
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Logs and local runtime data
+logs/
+*.log
