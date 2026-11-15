@@ -28,7 +28,7 @@ The interface uses a warm, neutral palette with a softly blended, continuously s
 - Orb rendering pauses when the home view is hidden, and the audio-responsive color wash uses fewer gradient layers to reduce idle rendering work.
 - Adjust the current Windows default playback device volume from the Lab settings.
 - Tune five equalizer bands and toggle Bass Boost and Bass Impact.
-- Enable Adaptive EQ, which learns a steady profile from Windows playback locally. Playback analysis does not capture microphone audio or send data over the network.
+- Enable Adaptive EQ, which learns a steady profile from Windows playback locally. Playback analysis does not capture microphone audio or send data over the network. The dormant automatic-mode signal source uses foreground process names and active microphone-session metadata, never microphone audio.
 - Use Focus Cycle in Focus mode.
 - Switch between the warm day theme and a low-glare dark night theme; the choice is saved locally.
 
@@ -50,6 +50,12 @@ dotnet build .\SennheiserTray.csproj
 dotnet run --project .\SennheiserTray.csproj
 ```
 
+Run the Windows-targeted unit tests with:
+
+```powershell
+dotnet test .\SennheiserTray.Tests\SennheiserTray.Tests.csproj
+```
+
 ## Getting started
 
 1. Pair and power on your headset in **Windows Settings → Bluetooth & devices**.
@@ -57,7 +63,7 @@ dotnet run --project .\SennheiserTray.csproj
 3. In **Lab → Settings**, enable **Connect automatically when headset is available** and, if desired, **Launch with Windows**. The app remembers your selected headset and reconnects when it becomes available.
 4. Choose a sound mode, then use the ANC control, **Tune**, or **Lab** to adjust available settings.
 
-Press **Ctrl+K** to open Tune and **Escape** to close the current drawer. Use the system-tray icon's right-click menu for quick controls, restart, or exit. Launching the app again brings the existing instance forward.
+Use **Escape** to close the current drawer. The global mute shortcut can be selected in Lab settings; registration conflicts are shown there. Use the system-tray icon's right-click menu for quick controls, restart, or exit. Launching the app again brings the existing instance forward.
 
 ## ACCENTUM Plus testing
 
@@ -86,6 +92,7 @@ Replace each “Not recorded” entry with the observed result and any relevant 
 - `Core/` — mode, protocol, and interaction rules.
 - `Infrastructure/` — logging, settings, and common command/property helpers.
 - `Themes/` — application colors and control styles.
+- `SennheiserTray.Tests/` — focused tests for mode selection, auto-mode rules, reconnect backoff, and GAIA framing.
 
 ## Troubleshooting
 

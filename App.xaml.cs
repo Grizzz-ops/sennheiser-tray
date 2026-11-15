@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,13 +12,16 @@ namespace SennheiserTray
 {
     public partial class App : System.Windows.Application
     {
-        private const string MutexName = @"Local\SennheiserTray.SingleInstance";
-        private const string PipeName = "SennheiserTray.SingleInstance.Activate";
+        private static readonly string UserSid = WindowsIdentity.GetCurrent().User?.Value
+            ?? throw new InvalidOperationException("The current Windows user SID is unavailable.");
+        private static string MutexName => $@"Local\SennheiserTray.{UserSid}.SingleInstance";
+        private static string PipeName => $"SennheiserTray.SingleInstance.{UserSid}.Activate";
         private Mutex? _instanceMutex;
         private CancellationTokenSource? _pipeCancellation;
         private MainWindow? _mainWindow;
         private bool _ownsMutex;
         private bool _restartRequested;
+        private DateTimeOffset _lastDispatcherErrorDialogAt = DateTimeOffset.MinValue;
 
         public void RequestRestart()
         {
@@ -27,6 +31,7 @@ namespace SennheiserTray
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            AppLogger.Initialize();
             RegisterGlobalExceptionHandlers();
             base.OnStartup(e);
 
@@ -72,11 +77,16 @@ namespace SennheiserTray
             DispatcherUnhandledException += (sender, args) =>
             {
                 AppLogger.LogException("Dispatcher unhandled exception", args.Exception);
-                System.Windows.MessageBox.Show(
-                    $"The error was logged locally. {args.Exception.Message}",
-                    "Sennheiser Control Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                if (DateTimeOffset.UtcNow - _lastDispatcherErrorDialogAt >= TimeSpan.FromMinutes(1))
+                {
+                    _lastDispatcherErrorDialogAt = DateTimeOffset.UtcNow;
+                    System.Windows.MessageBox.Show(
+                        $"The error was logged locally. {args.Exception.Message}",
+                        "Sennheiser Control Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+
                 args.Handled = true;
             };
         }
@@ -89,7 +99,7 @@ namespace SennheiserTray
                 try
                 {
                     using var client = new NamedPipeClientStream(
-                        ".", PipeName, PipeDirection.Out, PipeOptions.None);
+                        ".", PipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
                     client.Connect(250);
                     client.WriteByte(1);
                     client.Flush();
@@ -121,7 +131,7 @@ namespace SennheiserTray
                         PipeDirection.In,
                         1,
                         PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous);
+                        PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                     await server.WaitForConnectionAsync(cancellationToken);
                     byte[] signal = new byte[1];
                     int bytesRead = await server.ReadAsync(signal.AsMemory(), cancellationToken);

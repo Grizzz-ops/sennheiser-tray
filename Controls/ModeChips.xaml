@@ -21,7 +21,7 @@
                         <StackPanel>
                             <TextBlock Text="{Binding Icon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                        FontSize="16" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding Name}" FontSize="10" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Name}" FontSize="11" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </ToggleButton>
                     <Button Grid.ZIndex="1" Width="18" Height="18" Padding="0"

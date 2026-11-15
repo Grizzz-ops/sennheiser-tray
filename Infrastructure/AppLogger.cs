@@ -1,12 +1,15 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace SennheiserTray
 {
     public static class AppLogger
     {
+        private const long MaximumLogBytes = 5 * 1024 * 1024;
+        private const int MaximumEntryCharacters = 16 * 1024;
         private static readonly object SyncRoot = new();
         private static readonly string LogDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -15,18 +18,42 @@ namespace SennheiserTray
         private static string LogPath => Path.Combine(
             LogDirectory,
             $"app-{DateTime.Now:yyyy-MM-dd}.log");
+        private static bool _cleanupCompleted;
 
-        public static void LogException(string context, Exception exception)
+        public static void Initialize()
         {
-            ArgumentNullException.ThrowIfNull(exception);
-            string entry = $"{DateTimeOffset.Now:O} [{context}] {exception}{Environment.NewLine}";
             try
             {
                 lock (SyncRoot)
                 {
                     Directory.CreateDirectory(LogDirectory);
-                    File.AppendAllText(LogPath, entry, Encoding.UTF8);
                     RemoveExpiredLogs(DateTime.Now.Date.AddDays(-30));
+                    _cleanupCompleted = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Could not initialize app logs: {ex}");
+            }
+        }
+
+        public static void LogException(string context, Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            string entry = FormatEntry(context, exception);
+            try
+            {
+                lock (SyncRoot)
+                {
+                    Directory.CreateDirectory(LogDirectory);
+                    if (!_cleanupCompleted)
+                    {
+                        RemoveExpiredLogs(DateTime.Now.Date.AddDays(-30));
+                        _cleanupCompleted = true;
+                    }
+
+                    RotateCurrentLogIfNeeded(entry);
+                    File.AppendAllText(LogPath, entry, Encoding.UTF8);
                 }
             }
             catch (Exception logException)
@@ -36,11 +63,60 @@ namespace SennheiserTray
             }
         }
 
+        private static string FormatEntry(string context, Exception exception)
+        {
+            string entry = $"{DateTimeOffset.Now:O} [{context}] {exception.GetType().Name}: {exception.Message}";
+            string? stackTrace = exception.StackTrace;
+            if (!string.IsNullOrWhiteSpace(stackTrace))
+            {
+                string[] frames = stackTrace.Split(
+                    new[] { Environment.NewLine },
+                    StringSplitOptions.RemoveEmptyEntries);
+                entry += Environment.NewLine + string.Join(Environment.NewLine, frames.Take(4));
+            }
+
+            if (entry.Length > MaximumEntryCharacters)
+            {
+                entry = entry[..MaximumEntryCharacters] + " [entry truncated]";
+            }
+
+            return entry + Environment.NewLine;
+        }
+
+        private static void RotateCurrentLogIfNeeded(string entry)
+        {
+            if (!File.Exists(LogPath))
+            {
+                return;
+            }
+
+            long entryBytes = Encoding.UTF8.GetByteCount(entry);
+            if (new FileInfo(LogPath).Length + entryBytes <= MaximumLogBytes)
+            {
+                return;
+            }
+
+            string backupPath = LogPath + ".1";
+            if (File.Exists(backupPath))
+            {
+                File.Delete(backupPath);
+            }
+
+            File.Move(LogPath, backupPath);
+        }
+
         private static void RemoveExpiredLogs(DateTime cutoffDate)
         {
-            foreach (string path in Directory.EnumerateFiles(LogDirectory, "app-*.log"))
+            foreach (string path in Directory.EnumerateFiles(LogDirectory, "app-*"))
             {
-                string fileName = Path.GetFileNameWithoutExtension(path);
+                string fileName = Path.GetFileName(path);
+                int extensionIndex = fileName.IndexOf(".log", StringComparison.Ordinal);
+                if (extensionIndex < 0 || !fileName.StartsWith("app-", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                fileName = fileName[..extensionIndex];
                 string dateText = fileName["app-".Length..];
                 if (DateTime.TryParseExact(
                     dateText,

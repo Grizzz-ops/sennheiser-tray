@@ -26,7 +26,9 @@ namespace SennheiserTray
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(deviceId);
             Directory.CreateDirectory(SettingsDirectory);
-            File.WriteAllText(DevicePath, deviceId, Encoding.UTF8);
+            string temporaryPath = DevicePath + ".tmp";
+            File.WriteAllText(temporaryPath, deviceId, Encoding.UTF8);
+            File.Move(temporaryPath, DevicePath, overwrite: true);
         }
     }
 }

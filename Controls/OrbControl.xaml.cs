@@ -36,7 +36,6 @@ namespace SennheiserTray
             nameof(ToggleCommand), typeof(ICommand), typeof(OrbControl));
 
         private readonly bool _animationsEnabled = SystemParameters.ClientAreaAnimation;
-        private readonly SolidColorBrush _orbAccentBrush = new(System.Windows.Media.Color.FromRgb(169, 87, 54));
         private long _lastRenderTicks;
         private long _animationStartTicks;
         private long _pulseStartTicks;
@@ -68,9 +67,6 @@ namespace SennheiserTray
             InitializeComponent();
             CreateRainbowWash();
             _animationStartTicks = Stopwatch.GetTimestamp();
-            LevelArc.Stroke = _orbAccentBrush;
-            LevelArcGlow.Stroke = _orbAccentBrush;
-            DialThumb.Fill = _orbAccentBrush;
             Loaded += OrbControl_Loaded;
             Unloaded += OrbControl_Unloaded;
             IsVisibleChanged += OrbControl_IsVisibleChanged;
@@ -304,9 +300,6 @@ namespace SennheiserTray
 
         private void UpdateOrbColor(double elapsedSeconds, double liveLevel)
         {
-            System.Windows.Media.Color color = GetSpectrumColor(elapsedSeconds);
-            System.Windows.Media.Color secondaryColor = GetSpectrumColor(elapsedSeconds + 1.6);
-            _orbAccentBrush.Color = color;
             RainbowWashRotation.Angle = elapsedSeconds * 18 % 360;
 
             if (OrbGlow.Fill is not RadialGradientBrush gradient || gradient.GradientStops.Count < 3)
@@ -314,12 +307,20 @@ namespace SennheiserTray
                 return;
             }
 
+            System.Windows.Media.Color accentColor = System.Windows.Application.Current?.TryFindResource("AccentBrush")
+                is SolidColorBrush accentBrush
+                    ? accentBrush.Color
+                    : System.Windows.Media.Color.FromRgb(169, 87, 54);
             byte audioAlpha = (byte)Math.Round(liveLevel * 0x38);
             gradient.GradientStops[0].Color = System.Windows.Media.Color.FromArgb(
-                (byte)(0x78 + audioAlpha), color.R, color.G, color.B);
+                (byte)(0x78 + audioAlpha), accentColor.R, accentColor.G, accentColor.B);
             gradient.GradientStops[1].Color = System.Windows.Media.Color.FromArgb(
-                (byte)(0x38 + audioAlpha / 2), secondaryColor.R, secondaryColor.G, secondaryColor.B);
-            gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(0x00, color.R, color.G, color.B);
+                (byte)(0x38 + audioAlpha / 2), accentColor.R, accentColor.G, accentColor.B);
+            gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(
+                0x00,
+                accentColor.R,
+                accentColor.G,
+                accentColor.B);
         }
 
         private static System.Windows.Media.Color ColorFromHue(double hue, byte alpha)

@@ -17,16 +17,18 @@ namespace SennheiserTray
         private static readonly Guid SennheiserUuid = new("A2129FF3-081B-4C45-8AFE-469D9C4842EC");
         private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
         private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
+        private readonly ConcurrentDictionary<ushort, SemaphoreSlim> _requestSemaphores = new();
         private readonly ConcurrentDictionary<ushort, TaskCompletionSource<GaiaResult>> _pendingRequests = new();
         private StreamSocket? _socket;
         private DataWriter? _writer;
         private DataReader? _reader;
         private Task? _receiveTask;
+        private volatile bool _isConnected;
 
         public event Action<bool>? ConnectionChanged;
         public event Action<ushort, byte[]>? NotificationReceived;
 
-        public bool IsConnected { get; private set; }
+        public bool IsConnected => _isConnected;
         public string ConnectedDeviceName { get; private set; } = "Disconnected";
         public string? ConnectedDeviceId { get; private set; }
         public string LastConnectionError { get; private set; } = "";
@@ -124,7 +126,7 @@ namespace SennheiserTray
                 throw new ArgumentOutOfRangeException(nameof(payload), "GAIA payloads cannot exceed 65535 bytes.");
             }
 
-            byte[] packet = BuildPacket(GaiaCommands.VendorId, commandId, payload);
+            byte[] packet = GaiaPacketCodec.BuildPacket(GaiaCommands.VendorId, commandId, payload);
             string hexPreview = BitConverter.ToString(packet).Replace("-", " ");
             await _writeSemaphore.WaitAsync();
             try
@@ -161,37 +163,49 @@ namespace SennheiserTray
                 return new GaiaResult(false, "REQUEST DISABLED: reply command is unverified.", null);
             }
 
-            var completion = new TaskCompletionSource<GaiaResult>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_pendingRequests.TryAdd(expectedReplyId, completion))
-            {
-                return new GaiaResult(false, $"REQUEST BUSY: reply 0x{expectedReplyId:X4} is already pending.", null);
-            }
-
+            SemaphoreSlim requestSemaphore = _requestSemaphores.GetOrAdd(
+                expectedReplyId,
+                static _ => new SemaphoreSlim(1, 1));
+            await requestSemaphore.WaitAsync();
             try
             {
-                GaiaResult sent = await SendPacketAsync(commandId, payload);
-                if (!sent.Success)
+                var completion = new TaskCompletionSource<GaiaResult>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+                if (!_pendingRequests.TryAdd(expectedReplyId, completion))
                 {
-                    return sent;
+                    throw new InvalidOperationException(
+                        $"A request for reply 0x{expectedReplyId:X4} is already registered.");
                 }
 
                 try
                 {
-                    GaiaResult reply = await completion.Task.WaitAsync(timeout);
-                    return reply with { Log = $"REQUEST 0x{commandId:X4} -> {sent.Log} | {reply.Log}" };
+                    GaiaResult sent = await SendPacketAsync(commandId, payload);
+                    if (!sent.Success)
+                    {
+                        return sent;
+                    }
+
+                    try
+                    {
+                        GaiaResult reply = await completion.Task.WaitAsync(timeout);
+                        return reply with { Log = $"REQUEST 0x{commandId:X4} -> {sent.Log} | {reply.Log}" };
+                    }
+                    catch (TimeoutException)
+                    {
+                        return new GaiaResult(
+                            false,
+                            $"REQUEST TIMEOUT: sent 0x{commandId:X4}, expected reply 0x{expectedReplyId:X4}.",
+                            null);
+                    }
                 }
-                catch (TimeoutException)
+                finally
                 {
-                    return new GaiaResult(
-                        false,
-                        $"REQUEST TIMEOUT: sent 0x{commandId:X4}, expected reply 0x{expectedReplyId:X4}.",
-                        null);
+                    _pendingRequests.TryRemove(expectedReplyId, out _);
                 }
             }
             finally
             {
-                _pendingRequests.TryRemove(expectedReplyId, out _);
+                requestSemaphore.Release();
             }
         }
 
@@ -297,22 +311,6 @@ namespace SennheiserTray
                 results.LastOrDefault(result => result.Payload != null)?.Payload);
         }
 
-        private static byte[] BuildPacket(ushort vendorId, ushort commandId, byte[] payload)
-        {
-            ushort length = (ushort)payload.Length;
-            var packet = new byte[8 + length];
-            packet[0] = 0xFF;
-            packet[1] = 0x03;
-            packet[2] = (byte)(length >> 8);
-            packet[3] = (byte)length;
-            packet[4] = (byte)(vendorId >> 8);
-            packet[5] = (byte)vendorId;
-            packet[6] = (byte)(commandId >> 8);
-            packet[7] = (byte)commandId;
-            Array.Copy(payload, 0, packet, 8, length);
-            return packet;
-        }
-
         private async Task ReadResponsesAsync(DataReader reader)
         {
             Exception? failure = null;
@@ -320,42 +318,37 @@ namespace SennheiserTray
             {
                 while (IsConnected)
                 {
-                    var header = new byte[8];
-                    if (!await ReadExactlyAsync(reader, header))
+                    var headerBytes = new byte[GaiaPacketCodec.HeaderLength];
+                    if (!await ReadExactlyAsync(reader, headerBytes))
                     {
                         break;
                     }
 
-                    if (header[0] != 0xFF || header[1] != 0x03)
-                    {
-                        throw new InvalidOperationException("Received an invalid GAIA frame header.");
-                    }
-
-                    ushort payloadLength = (ushort)((header[2] << 8) | header[3]);
-                    var payload = new byte[payloadLength];
-                    if (payloadLength > 0 && !await ReadExactlyAsync(reader, payload))
+                    GaiaPacketHeader header = GaiaPacketCodec.ParseHeader(headerBytes);
+                    var payload = new byte[header.PayloadLength];
+                    if (payload.Length > 0 && !await ReadExactlyAsync(reader, payload))
                     {
                         break;
                     }
 
-                    ushort vendorId = (ushort)((header[4] << 8) | header[5]);
-                    ushort commandId = (ushort)((header[6] << 8) | header[7]);
-                    if (vendorId != GaiaCommands.VendorId)
+                    if (header.VendorId != GaiaCommands.VendorId)
                     {
-                        RaiseNotification(commandId, payload);
+                        RaiseNotification(header.CommandId, payload);
                         continue;
                     }
 
-                    if (_pendingRequests.TryRemove(commandId, out TaskCompletionSource<GaiaResult>? pending))
+                    if (_pendingRequests.TryRemove(
+                        header.CommandId,
+                        out TaskCompletionSource<GaiaResult>? pending))
                     {
                         pending.TrySetResult(new GaiaResult(
                             true,
-                            $"REPLY 0x{commandId:X4}: {BitConverter.ToString(payload).Replace("-", " ")}",
+                            $"REPLY 0x{header.CommandId:X4}: {BitConverter.ToString(payload).Replace("-", " ")}",
                             payload));
                     }
                     else
                     {
-                        RaiseNotification(commandId, payload);
+                        RaiseNotification(header.CommandId, payload);
                     }
                 }
             }
@@ -432,7 +425,7 @@ namespace SennheiserTray
                 return;
             }
 
-            IsConnected = connected;
+            _isConnected = connected;
             RaiseConnectionChanged(connected);
         }
 
@@ -460,7 +453,7 @@ namespace SennheiserTray
         private void CloseTransport(bool notify)
         {
             bool wasConnected = IsConnected;
-            IsConnected = false;
+            _isConnected = false;
             foreach (TaskCompletionSource<GaiaResult> pending in _pendingRequests.Values)
             {
                 pending.TrySetResult(new GaiaResult(false, "REQUEST FAILED: GAIA connection closed.", null));

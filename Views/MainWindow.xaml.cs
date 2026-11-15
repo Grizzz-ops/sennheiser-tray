@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Resources;
+using System.Windows.Threading;
 using WinForms = System.Windows.Forms;
 
 namespace SennheiserTray
@@ -17,7 +17,6 @@ namespace SennheiserTray
         private const uint ModControl = 0x0002;
         private const uint ModShift = 0x0004;
         private const uint ModNoRepeat = 0x4000;
-        private const uint VirtualKeyM = 0x4D;
         private const int WmHotkey = 0x0312;
         private readonly HeadphoneViewModel _viewModel;
         private readonly Dictionary<string, WinForms.ToolStripMenuItem> _soundProfileItems =
@@ -29,6 +28,7 @@ namespace SennheiserTray
         private WinForms.ToolStripMenuItem? _volumeStatusItem;
         private WinForms.ToolStripMenuItem? _volumeDownItem;
         private WinForms.ToolStripMenuItem? _volumeUpItem;
+        private readonly DispatcherTimer _hideTimer;
         private bool _muteHotkeyRegistered;
         private bool _lowBatteryAlertShown;
 
@@ -39,6 +39,10 @@ namespace SennheiserTray
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.AutomaticConnectionSucceeded += ViewModel_AutomaticConnectionSucceeded;
+            _viewModel.MuteHotkeyChanged += RegisterGlobalMuteHotkey;
+            _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+            _hideTimer.Tick += HideTimer_Tick;
+            IsVisibleChanged += MainWindow_IsVisibleChanged;
             InitializeTrayIcon();
             RefreshTrayMenu();
             SourceInitialized += MainWindow_SourceInitialized;
@@ -61,6 +65,9 @@ namespace SennheiserTray
                     _muteHotkeyRegistered = false;
                 }
 
+                _hideTimer.Stop();
+                _hideTimer.Tick -= HideTimer_Tick;
+                IsVisibleChanged -= MainWindow_IsVisibleChanged;
                 if (_hotkeySource != null)
                 {
                     _hotkeySource.RemoveHook(WindowHook);
@@ -69,6 +76,7 @@ namespace SennheiserTray
 
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 _viewModel.AutomaticConnectionSucceeded -= ViewModel_AutomaticConnectionSucceeded;
+                _viewModel.MuteHotkeyChanged -= RegisterGlobalMuteHotkey;
                 _viewModel.Dispose();
                 if (_trayIcon != null)
                 {
@@ -87,11 +95,34 @@ namespace SennheiserTray
             IntPtr handle = new WindowInteropHelper(this).Handle;
             _hotkeySource = HwndSource.FromHwnd(handle);
             _hotkeySource?.AddHook(WindowHook);
+            RegisterGlobalMuteHotkey();
+        }
+
+        private void RegisterGlobalMuteHotkey()
+        {
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            if (_muteHotkeyRegistered)
+            {
+                UnregisterHotKey(handle, MuteHotkeyId);
+                _muteHotkeyRegistered = false;
+            }
+
+            uint virtualKey = _viewModel.MuteHotkeyKey switch
+            {
+                "U" => 0x55,
+                "F9" => 0x78,
+                _ => 0x4D
+            };
             _muteHotkeyRegistered = RegisterHotKey(
                 handle,
                 MuteHotkeyId,
                 ModControl | ModShift | ModNoRepeat,
-                VirtualKeyM);
+                virtualKey);
             _viewModel.SetGlobalMuteHotkeyAvailable(_muteHotkeyRegistered);
             if (!_muteHotkeyRegistered)
             {
@@ -144,9 +175,7 @@ namespace SennheiserTray
                 }
                 else
                 {
-                    PositionNearSystemTray();
-                    Show();
-                    Activate();
+                    ShowMainWindow();
                 }
             };
 
@@ -312,6 +341,7 @@ namespace SennheiserTray
 
         private void ShowMainWindow()
         {
+            _hideTimer.Stop();
             if (WindowState == WindowState.Minimized)
             {
                 WindowState = WindowState.Normal;
@@ -340,7 +370,23 @@ namespace SennheiserTray
             Top = workArea.Bottom - Height - 12;
         }
 
-        private void Window_Deactivated(object? sender, EventArgs e) => Hide();
+        private void MainWindow_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) =>
+            _viewModel.SetWindowVisible(IsVisible);
+
+        private void Window_Deactivated(object? sender, EventArgs e)
+        {
+            _hideTimer.Stop();
+            _hideTimer.Start();
+        }
+
+        private void HideTimer_Tick(object? sender, EventArgs e)
+        {
+            _hideTimer.Stop();
+            if (!IsActive)
+            {
+                Hide();
+            }
+        }
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

@@ -4,6 +4,7 @@
     <SolidColorBrush x:Key="SurfaceBrush" Color="#2D312D"/>
     <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#383D38"/>
     <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#454A44"/>
+    <SolidColorBrush x:Key="ControlBorderBrush" Color="#535A52"/>
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0EEE7"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#C0C4BA"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="#9A9F95"/>
@@ -13,6 +14,11 @@
     <SolidColorBrush x:Key="EqGraphLabelBrush" Color="#A5AA9F"/>
     <SolidColorBrush x:Key="EqBandLabelBrush" Color="#D0D1C8"/>
     <SolidColorBrush x:Key="StatusCommandBrush" Color="#B7C7B5"/>
+    <SolidColorBrush x:Key="StatusConnectedBrush" Color="#79C99A"/>
+    <SolidColorBrush x:Key="StatusPendingBrush" Color="#E8B36B"/>
+    <SolidColorBrush x:Key="StatusWarningBrush" Color="#E8B36B"/>
+    <SolidColorBrush x:Key="StatusSuccessBrush" Color="#79C99A"/>
+    <SolidColorBrush x:Key="FocusRingBrush" Color="#E39A78"/>
     <Color x:Key="OrbCoreCenterColor">#FF4A504A</Color>
     <Color x:Key="OrbCoreMiddleColor">#FF3B413B</Color>
     <Color x:Key="OrbCoreEdgeColor">#FF303630</Color>

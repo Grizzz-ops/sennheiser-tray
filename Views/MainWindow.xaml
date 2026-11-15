@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:SennheiserTray"
         Title="Sennheiser Control"
         Icon="pack://application:,,,/SennheiserTray;component/Assets/SennheiserTray.ico"
-        Width="360" Height="540" MinWidth="340" MinHeight="520"
+        Width="360" Height="540" MinWidth="320" MinHeight="460"
         WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True"
@@ -17,7 +17,12 @@
         <KeyBinding Key="K" Modifiers="Control" Command="{Binding OpenTuneCommand}"/>
     </Window.InputBindings>
 
-    <Border Background="{DynamicResource AppBackgroundBrush}">
+    <Border Margin="8" Background="{DynamicResource AppBackgroundBrush}"
+            BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
+            CornerRadius="16" ClipToBounds="True">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.28"/>
+        </Border.Effect>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="38"/>
@@ -51,7 +56,7 @@
                                Visibility="{Binding IsChargingInferred, Converter={StaticResource BooleanToVisibilityConverter}}"
                                AutomationProperties.Name="Charging inferred from battery trend"/>
                     <TextBlock Text="{Binding BatteryText}" Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="10" VerticalAlignment="Center"/>
+                               FontSize="11" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Grid.Column="4" Content="Connect" Command="{Binding ConnectCommand}"
                         Style="{StaticResource ActionButtonStyle}" Padding="8,4"
@@ -63,23 +68,15 @@
                       IsEnabled="{Binding CanChangeMode}"
                       Visibility="{Binding IsHomeScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="24"/>
                         <RowDefinition Height="42"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="28"/>
                         <RowDefinition Height="40"/>
                     </Grid.RowDefinitions>
 
-                    <ToggleButton Grid.Row="0" Content="Auto" IsEnabled="False"
-                                  HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Foreground="{DynamicResource TextSecondaryBrush}"
-                                  Background="Transparent" BorderThickness="0"
-                                  FontSize="10" Padding="8,3"
-                                  AutomationProperties.Name="Auto mode, available in a later update"/>
+                    <local:ModeChips Grid.Row="0" VerticalAlignment="Center"/>
 
-                    <local:ModeChips Grid.Row="1" VerticalAlignment="Center"/>
-
-                    <local:OrbControl Grid.Row="2" Width="310" Height="310"
+                    <local:OrbControl Grid.Row="1" Width="310" Height="310"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Level="{Binding AncLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -93,14 +90,14 @@
                                       LevelCommand="{Binding OrbLevelChangedCommand}"
                                       ToggleCommand="{Binding ToggleOrbCommand}"/>
 
-                    <Button Grid.Row="3" Content="Adaptive"
+                    <Button Grid.Row="2" Content="Adaptive"
                             Command="{Binding AdaptiveAncCommand}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Padding="14,5" FontSize="10"
+                            Padding="14,5" FontSize="11"
                             Style="{StaticResource AdaptivePillStyle}"
                             AutomationProperties.Name="Toggle Adaptive noise cancellation"/>
 
-                    <Grid Grid.Row="4">
+                    <Grid Grid.Row="3">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -110,9 +107,6 @@
                                 Style="{StaticResource ActionButtonStyle}" Margin="0,0,5,0"/>
                         <Button Grid.Column="1" Content="Lab" Command="{Binding OpenLabCommand}"
                                 Style="{StaticResource ActionButtonStyle}" Margin="5,0"/>
-                        <TextBlock Grid.Column="2" Text="Ctrl+K" Foreground="{DynamicResource TextMutedBrush}"
-                                   FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0"
-                                   AutomationProperties.Name="Keyboard shortcut Control K"/>
                     </Grid>
                 </Grid>
 
@@ -135,9 +129,9 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="EQUALIZER" Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="10" FontWeight="Bold"/>
+                                               FontSize="11" FontWeight="Bold"/>
                                     <TextBlock Text="Shape your sound" Foreground="{DynamicResource TextPrimaryBrush}"
-                                               FontSize="20" FontWeight="SemiBold" Margin="0,3,0,0"/>
+                                               FontSize="16" FontWeight="SemiBold" Margin="0,3,0,0"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Reset flat" Command="{Binding ResetEqCommand}"
                                         Style="{StaticResource ActionButtonStyle}" VerticalAlignment="Center"
@@ -153,38 +147,38 @@
                                     <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
                                     <ColumnDefinition/><ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="50 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="250 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="800 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="3 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="4" Text="8 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="50 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="11" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="250 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="11" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="800 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="11" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="3 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="11" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="8 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="11" TextAlignment="Center"/>
                             </Grid>
 
                             <TextBlock Text="−6 to +6 dB" Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="10" HorizontalAlignment="Right" Margin="0,0,2,2"/>
+                                       FontSize="11" HorizontalAlignment="Right" Margin="0,0,2,2"/>
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="Bass" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Eq1Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Eq1Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[0], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="Low mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Eq2Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Eq2Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[1], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="Mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Eq3Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Eq3Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[2], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
                                 <TextBlock Text="High mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Eq4Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Eq4Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[3], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3,0,8">
                                 <TextBlock Text="Treble" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Eq5Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Eq5Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="11" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[4], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
 
@@ -203,7 +197,7 @@
                                         Style="{StaticResource ActionButtonStyle}"/>
                             </Grid>
                             <TextBlock Text="Bass Impact boosts headset DSP and EQ; it does not create physical vibration."
-                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,4,0,8"/>
                             <Button Content="Restore previous mode" Command="{Binding RestorePreviousModeCommand}"
                                     IsEnabled="{Binding CanRestorePreviousMode}"
@@ -227,30 +221,30 @@
                                     Padding="12" Margin="0,0,0,16">
                                 <StackPanel>
                                     <TextBlock Text="BATTERY LIFE" Foreground="{DynamicResource AccentBrush}"
-                                               FontSize="10" FontWeight="Bold"/>
+                                               FontSize="11" FontWeight="Bold"/>
                                     <TextBlock Text="{Binding BatteryText}" Foreground="{DynamicResource TextPrimaryBrush}"
                                                FontSize="16" FontWeight="SemiBold" Margin="0,5,0,2"/>
                                     <TextBlock Text="{Binding BatteryEstimateStatus}"
                                                Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
                                                TextWrapping="Wrap"/>
                                     <TextBlock Text="Approximate estimate from recent battery changes. Keep the app connected; battery health and charging control are not available."
-                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                                TextWrapping="Wrap" Margin="0,5,0,0"/>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="ADAPTIVE EQ" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold"/>
+                            <TextBlock Text="ADAPTIVE EQ" Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="Bold"/>
                             <TextBlock Text="Learns a steady profile from Windows playback, locally."
-                                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,4,0,10"/>
                             <Button Content="{Binding AdaptiveEqButtonText}" Command="{Binding AdaptiveEqCommand}"
                                     Style="{StaticResource ActionButtonStyle}" HorizontalAlignment="Left"/>
                             <TextBlock Text="{Binding AdaptiveEqStatus}"
-                                       Foreground="{Binding AdaptiveEqStatusForeground}" FontSize="10"
+                                       Foreground="{Binding AdaptiveEqStatusForeground}" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,8,0,16"/>
                             <StackPanel Visibility="{Binding IsCallsMode, Converter={StaticResource BooleanToVisibilityConverter}}"
                                         Margin="0,0,0,14">
                                 <TextBlock Text="CALLS" Foreground="{DynamicResource AccentBrush}"
-                                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                                           FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <Button Content="{Binding MicrophoneMuteText}"
                                         Command="{Binding ToggleMicrophoneMuteCommand}"
                                         ToolTip="{Binding MicrophoneMuteHotkeyStatus}"
@@ -258,13 +252,7 @@
                                         HorizontalAlignment="Left"/>
                                 <TextBlock Text="{Binding MicrophoneMuteHotkeyStatus}"
                                            Foreground="{DynamicResource TextMutedBrush}"
-                                           FontSize="10" Margin="0,5,0,0"/>
-                                <TextBlock Text="Sidetone" Visibility="{Binding IsSidetoneAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
-                                           Margin="0,9,0,2"/>
-                                <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
-                                        Visibility="{Binding IsSidetoneAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                        IsEnabled="False"/>
+                                           FontSize="11" Margin="0,5,0,0"/>
                             </StackPanel>
                             <StackPanel Visibility="{Binding IsGamingHintVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                                         Margin="0,0,0,14">
@@ -273,32 +261,29 @@
                                             Style="{StaticResource ActionButtonStyle}" Padding="7,4"
                                             DockPanel.Dock="Right" AutomationProperties.Name="Dismiss gaming latency hint"/>
                                     <TextBlock Text="Gaming connection" Foreground="{DynamicResource AccentBrush}"
-                                               FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                               FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </DockPanel>
                                 <TextBlock Text="Bluetooth adds latency. For the lowest delay use a wired or dongle connection."
                                            Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
                                            TextWrapping="Wrap" Margin="0,5,0,0"/>
                             </StackPanel>
-                            <ToggleButton Content="Low-latency headset setting"
-                                          Visibility="{Binding IsLowLatencyAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                          IsEnabled="False" Margin="0,0,0,14"/>
                             <StackPanel Visibility="{Binding IsFocusMode, Converter={StaticResource BooleanToVisibilityConverter}}"
                                         Margin="0,0,0,14">
                                 <TextBlock Text="FOCUS CYCLE" Foreground="{DynamicResource AccentBrush}"
-                                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                                           FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <Button Content="{Binding FocusCycleButtonText}" Command="{Binding FocusCycleCommand}"
                                         Style="{StaticResource ActionButtonStyle}" HorizontalAlignment="Left"/>
                                 <TextBlock Text="{Binding FocusCycleStatus}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
                                            Margin="0,5,0,0"/>
                             </StackPanel>
                             <TextBlock Text="LAST COMMAND" Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                                       FontSize="11" FontWeight="Bold" Margin="0,0,0,5"/>
                             <TextBlock Text="{Binding LastCommand}" Foreground="{DynamicResource StatusCommandBrush}"
-                                       FontFamily="Consolas" FontSize="10"
+                                       FontFamily="Consolas" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,0,0,16"/>
                             <TextBlock Text="SETTINGS" Foreground="{DynamicResource TextSecondaryBrush}"
-                                       FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                                       FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
                             <TextBlock Text="Appearance" Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="12" Margin="0,0,0,2"/>
                             <Button Content="{Binding ThemeToggleText}" Command="{Binding ToggleThemeCommand}"
@@ -312,20 +297,29 @@
                                       IsChecked="{Binding IsLaunchOnStartup, Mode=TwoWay}"
                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                       FontSize="11" Margin="0,0,0,14"/>
+                            <TextBlock Text="Global microphone mute shortcut"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="12" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding MuteHotkeyChoices}"
+                                      SelectedItem="{Binding MuteHotkeyKey, Mode=TwoWay}"
+                                      ToolTip="Uses Ctrl+Shift plus the selected key"/>
+                            <TextBlock Text="Choose another key if the shortcut is already in use."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="11" TextWrapping="Wrap" Margin="0,4,0,14"/>
                             <TextBlock Text="Windows output volume" Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="12" Margin="0,0,0,2"/>
                             <DockPanel Margin="0,0,0,8">
                                 <TextBlock Text="{Binding PlaybackVolume, StringFormat={}{0}%}"
                                            Foreground="{DynamicResource AccentBrush}" Width="38"
                                            DockPanel.Dock="Right" TextAlignment="Right"
-                                           VerticalAlignment="Center" FontSize="10"/>
+                                           VerticalAlignment="Center" FontSize="11"/>
                                 <Slider Minimum="0" Maximum="100" Value="{Binding PlaybackVolume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         IsEnabled="{Binding IsPlaybackVolumeAvailable}"
                                         ToolTip="{Binding PlaybackVolumeStatus}"
                                         Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <TextBlock Text="{Binding PlaybackVolumeStatus}"
-                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,0,0,12"/>
                             <TextBlock Text="Headset" Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="12" Margin="0,0,0,5"/>
@@ -336,7 +330,7 @@
                                     Style="{StaticResource ActionButtonStyle}" HorizontalAlignment="Left"
                                     Margin="0,8,0,0"/>
                             <TextBlock Text="Playback analysis uses Windows loopback locally; no microphone capture or network access."
-                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                                        TextWrapping="Wrap" Margin="0,14,0,0"/>
                         </StackPanel>
                     </ScrollViewer>

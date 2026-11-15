@@ -14,6 +14,7 @@ namespace SennheiserTray
         public bool GamingLatencyHintDismissed { get; private set; }
         public bool IsDarkTheme { get; private set; }
         public bool AutoConnectEnabled { get; private set; } = true;
+        public string MuteHotkeyKey { get; private set; } = "M";
 
         public void Load()
         {
@@ -24,6 +25,7 @@ namespace SennheiserTray
                     GamingLatencyHintDismissed = false;
                     IsDarkTheme = false;
                     AutoConnectEnabled = true;
+                    MuteHotkeyKey = "M";
                     return;
                 }
 
@@ -32,6 +34,9 @@ namespace SennheiserTray
                 GamingLatencyHintDismissed = data?.GamingLatencyHintDismissed ?? false;
                 IsDarkTheme = data?.IsDarkTheme ?? false;
                 AutoConnectEnabled = data?.AutoConnectEnabled ?? true;
+                MuteHotkeyKey = data?.MuteHotkeyKey is "M" or "U" or "F9"
+                    ? data.MuteHotkeyKey
+                    : "M";
             }
         }
 
@@ -42,7 +47,8 @@ namespace SennheiserTray
                 SaveSettings(
                     gamingLatencyHintDismissed: true,
                     isDarkTheme: IsDarkTheme,
-                    autoConnectEnabled: AutoConnectEnabled);
+                    autoConnectEnabled: AutoConnectEnabled,
+                    muteHotkeyKey: MuteHotkeyKey);
                 GamingLatencyHintDismissed = true;
             }
         }
@@ -51,7 +57,11 @@ namespace SennheiserTray
         {
             lock (_gate)
             {
-                SaveSettings(GamingLatencyHintDismissed, isDarkTheme, AutoConnectEnabled);
+                SaveSettings(
+                    GamingLatencyHintDismissed,
+                    isDarkTheme,
+                    AutoConnectEnabled,
+                    MuteHotkeyKey);
                 IsDarkTheme = isDarkTheme;
             }
         }
@@ -60,15 +70,39 @@ namespace SennheiserTray
         {
             lock (_gate)
             {
-                SaveSettings(GamingLatencyHintDismissed, IsDarkTheme, autoConnectEnabled);
+                SaveSettings(
+                    GamingLatencyHintDismissed,
+                    IsDarkTheme,
+                    autoConnectEnabled,
+                    MuteHotkeyKey);
                 AutoConnectEnabled = autoConnectEnabled;
+            }
+        }
+
+        public void SetMuteHotkeyKey(string muteHotkeyKey)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(muteHotkeyKey);
+            if (muteHotkeyKey is not ("M" or "U" or "F9"))
+            {
+                throw new ArgumentOutOfRangeException(nameof(muteHotkeyKey));
+            }
+
+            lock (_gate)
+            {
+                SaveSettings(
+                    GamingLatencyHintDismissed,
+                    IsDarkTheme,
+                    AutoConnectEnabled,
+                    muteHotkeyKey);
+                MuteHotkeyKey = muteHotkeyKey;
             }
         }
 
         private static void SaveSettings(
             bool gamingLatencyHintDismissed,
             bool isDarkTheme,
-            bool autoConnectEnabled)
+            bool autoConnectEnabled,
+            string muteHotkeyKey)
         {
             Directory.CreateDirectory(SettingsDirectory);
             string temporaryPath = SettingsPath + ".tmp";
@@ -77,13 +111,15 @@ namespace SennheiserTray
                 JsonSerializer.Serialize(new SettingsData(
                     gamingLatencyHintDismissed,
                     isDarkTheme,
-                    autoConnectEnabled)));
+                    autoConnectEnabled,
+                    muteHotkeyKey)));
             File.Move(temporaryPath, SettingsPath, overwrite: true);
         }
 
         private sealed record SettingsData(
             bool GamingLatencyHintDismissed,
             bool IsDarkTheme = false,
-            bool? AutoConnectEnabled = null);
+            bool? AutoConnectEnabled = null,
+            string? MuteHotkeyKey = null);
     }
 }

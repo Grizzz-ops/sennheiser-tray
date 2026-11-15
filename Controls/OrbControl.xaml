@@ -12,14 +12,14 @@
         <Ellipse x:Name="ModeRing" Width="284" Height="284" Canvas.Left="13" Canvas.Top="13"
                  Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.2"
                  Opacity="0.22" IsHitTestVisible="False"/>
-        <Path x:Name="LevelArcGlow" Stroke="#40A95736"
-              StrokeThickness="12" StrokeStartLineCap="Round"
+        <Path x:Name="LevelArcGlow" Stroke="{DynamicResource AccentBrush}"
+              Opacity="0.22" StrokeThickness="12" StrokeStartLineCap="Round"
               StrokeEndLineCap="Round" IsHitTestVisible="False"/>
-        <Path x:Name="LevelArc" Stroke="#A95736"
+        <Path x:Name="LevelArc" Stroke="{DynamicResource AccentBrush}"
               StrokeThickness="3.2" StrokeStartLineCap="Round"
               StrokeEndLineCap="Round" IsHitTestVisible="False"/>
         <Ellipse x:Name="DialThumb" Width="14" Height="14"
-                 Fill="#A95736" Stroke="#FFFDF8"
+                 Fill="{DynamicResource AccentBrush}" Stroke="{DynamicResource AppBackgroundBrush}"
                  StrokeThickness="1.5" IsHitTestVisible="False"
                  RenderTransformOrigin="0.5,0.5">
             <Ellipse.RenderTransform>
@@ -73,12 +73,12 @@
                        Foreground="{DynamicResource TextPrimaryBrush}" FontSize="22"
                        FontWeight="SemiBold" TextAlignment="Center"/>
             <TextBlock x:Name="LevelCaption" Text="50"
-                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
+                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
                        Margin="0,5,0,0" TextAlignment="Center"/>
         </StackPanel>
-        <TextBlock Text="Noise" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+        <TextBlock Text="Noise" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                    Canvas.Left="60" Canvas.Top="7" IsHitTestVisible="False"/>
-        <TextBlock Text="Awareness" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+        <TextBlock Text="Awareness" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
                    Canvas.Right="39" Canvas.Top="7" IsHitTestVisible="False"/>
     </Canvas>
 </UserControl>
