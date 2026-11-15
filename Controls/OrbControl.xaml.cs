@@ -37,7 +37,7 @@ namespace SennheiserTray
 
         private readonly bool _animationsEnabled = SystemParameters.ClientAreaAnimation;
         private readonly SolidColorBrush _orbAccentBrush = new(System.Windows.Media.Color.FromRgb(169, 87, 54));
-        private readonly List<(Path Segment, SolidColorBrush Brush)> _rainbowSegments = new();
+        private readonly List<RadialGradientBrush> _rainbowGlows = new();
         private long _lastRenderTicks;
         private long _animationStartTicks;
         private long _pulseStartTicks;
@@ -56,7 +56,7 @@ namespace SennheiserTray
         public OrbControl()
         {
             InitializeComponent();
-            CreateRainbowRing();
+            CreateRainbowWash();
             _animationStartTicks = Stopwatch.GetTimestamp();
             LevelArc.Stroke = _orbAccentBrush;
             DialThumb.Fill = _orbAccentBrush;
@@ -207,8 +207,8 @@ namespace SennheiserTray
 
             GlowScale.ScaleX = scale;
             GlowScale.ScaleY = scale;
-            RainbowRingScale.ScaleX = scale;
-            RainbowRingScale.ScaleY = scale;
+            RainbowWashScale.ScaleX = scale;
+            RainbowWashScale.ScaleY = scale;
             CoreScale.ScaleX = 1 + connectPulse * 0.3 + liveLevel * 0.1;
             CoreScale.ScaleY = CoreScale.ScaleX;
             double normalOpacity = (IsConnected ? 0.42 + liveLevel * 0.5 : 0.12) + connectPulse;
@@ -217,45 +217,40 @@ namespace SennheiserTray
                 : IsFocusBreak
                     ? _focusTransitionTargetOpacity + liveLevel * 0.24
                     : normalOpacity;
-            RainbowRingCanvas.Opacity = IsConnected ? 0.78 + liveLevel * 0.22 : 0.12;
+            RainbowWashCanvas.Opacity = IsConnected ? 0.72 + liveLevel * 0.18 : 0.12;
             OrbCore.Opacity = IsConnected ? 1 : 0.58;
         }
 
-        private void CreateRainbowRing()
+        private void CreateRainbowWash()
         {
-            const int segmentCount = 72;
-            const double center = 155;
-            const double radius = 101;
-            const double segmentAngle = 360d / segmentCount;
-            const double gapAngle = 0.45;
+            const int glowCount = 24;
+            const double center = 84;
+            const double radius = 48;
+            const double glowSize = 100;
 
-            for (int index = 0; index < segmentCount; index++)
+            for (int index = 0; index < glowCount; index++)
             {
-                double startAngle = index * segmentAngle + gapAngle / 2;
-                double endAngle = (index + 1) * segmentAngle - gapAngle / 2;
-                Point start = PointOnCircle(center, radius, startAngle);
-                Point end = PointOnCircle(center, radius, endAngle);
-                var figure = new PathFigure { StartPoint = start, IsClosed = false };
-                figure.Segments.Add(new ArcSegment(
-                    end,
-                    new System.Windows.Size(radius, radius),
-                    0,
-                    false,
-                    SweepDirection.Clockwise,
-                    true));
-
-                var brush = new SolidColorBrush(ColorFromHue(index / (double)segmentCount));
-                var segment = new Path
+                double angle = index * (360d / glowCount) * Math.PI / 180;
+                var gradient = new RadialGradientBrush
                 {
-                    Data = new PathGeometry { Figures = { figure } },
-                    Stroke = brush,
-                    StrokeThickness = 20,
-                    StrokeStartLineCap = PenLineCap.Flat,
-                    StrokeEndLineCap = PenLineCap.Flat,
+                    GradientStops =
+                    {
+                        new GradientStop(ColorFromHue(index / (double)glowCount, 0x58), 0),
+                        new GradientStop(ColorFromHue(index / (double)glowCount, 0x24), 0.48),
+                        new GradientStop(ColorFromHue(index / (double)glowCount, 0), 1)
+                    }
+                };
+                var glow = new Ellipse
+                {
+                    Width = glowSize,
+                    Height = glowSize,
+                    Fill = gradient,
                     IsHitTestVisible = false
                 };
-                RainbowRingCanvas.Children.Add(segment);
-                _rainbowSegments.Add((segment, brush));
+                Canvas.SetLeft(glow, center + Math.Cos(angle) * radius - glowSize / 2);
+                Canvas.SetTop(glow, center + Math.Sin(angle) * radius - glowSize / 2);
+                RainbowWashCanvas.Children.Add(glow);
+                _rainbowGlows.Add(gradient);
             }
         }
 
@@ -277,15 +272,18 @@ namespace SennheiserTray
                 (byte)(0x38 + audioAlpha / 2), secondaryColor.R, secondaryColor.G, secondaryColor.B);
             gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(0x00, color.R, color.G, color.B);
 
-            double hueOffset = elapsedSeconds * 0.035;
-            for (int index = 0; index < _rainbowSegments.Count; index++)
+            double hueOffset = elapsedSeconds * 0.09;
+            for (int index = 0; index < _rainbowGlows.Count; index++)
             {
-                double hue = (index / (double)_rainbowSegments.Count + hueOffset) % 1;
-                _rainbowSegments[index].Brush.Color = ColorFromHue(hue);
+                double hue = (index / (double)_rainbowGlows.Count + hueOffset) % 1;
+                GradientStopCollection stops = _rainbowGlows[index].GradientStops;
+                stops[0].Color = ColorFromHue(hue, 0x58);
+                stops[1].Color = ColorFromHue(hue, 0x24);
+                stops[2].Color = ColorFromHue(hue, 0);
             }
         }
 
-        private static System.Windows.Media.Color ColorFromHue(double hue)
+        private static System.Windows.Media.Color ColorFromHue(double hue, byte alpha)
         {
             double scaledHue = hue * 6;
             int sector = (int)Math.Floor(scaledHue);
@@ -294,12 +292,12 @@ namespace SennheiserTray
 
             return (sector % 6) switch
             {
-                0 => System.Windows.Media.Color.FromRgb(255, (byte)Math.Round(fraction * 255), 0),
-                1 => System.Windows.Media.Color.FromRgb((byte)Math.Round(descending * 255), 255, 0),
-                2 => System.Windows.Media.Color.FromRgb(0, 255, (byte)Math.Round(fraction * 255)),
-                3 => System.Windows.Media.Color.FromRgb(0, (byte)Math.Round(descending * 255), 255),
-                4 => System.Windows.Media.Color.FromRgb((byte)Math.Round(fraction * 255), 0, 255),
-                _ => System.Windows.Media.Color.FromRgb(255, 0, (byte)Math.Round(descending * 255))
+                0 => System.Windows.Media.Color.FromArgb(alpha, 255, (byte)Math.Round(fraction * 255), 0),
+                1 => System.Windows.Media.Color.FromArgb(alpha, (byte)Math.Round(descending * 255), 255, 0),
+                2 => System.Windows.Media.Color.FromArgb(alpha, 0, 255, (byte)Math.Round(fraction * 255)),
+                3 => System.Windows.Media.Color.FromArgb(alpha, 0, (byte)Math.Round(descending * 255), 255),
+                4 => System.Windows.Media.Color.FromArgb(alpha, (byte)Math.Round(fraction * 255), 0, 255),
+                _ => System.Windows.Media.Color.FromArgb(alpha, 255, 0, (byte)Math.Round(descending * 255))
             };
         }
 
@@ -348,7 +346,7 @@ namespace SennheiserTray
 
         private void UpdateConnectionVisual()
         {
-            RainbowRingCanvas.Opacity = IsConnected ? 0.8 : 0.12;
+            RainbowWashCanvas.Opacity = IsConnected ? 0.72 : 0.12;
             if (!_animationsEnabled)
             {
                 OrbGlow.Opacity = IsConnected ? 0.38 : 0.12;

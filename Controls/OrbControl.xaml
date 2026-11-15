@@ -32,12 +32,6 @@
                 <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1"/>
             </Ellipse.RenderTransform>
         </Ellipse>
-        <Canvas x:Name="RainbowRingCanvas" Width="310" Height="310" Opacity="0.8"
-                RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
-            <Canvas.RenderTransform>
-                <ScaleTransform x:Name="RainbowRingScale" ScaleX="1" ScaleY="1"/>
-            </Canvas.RenderTransform>
-        </Canvas>
         <Ellipse x:Name="OrbCore" Width="168" Height="168"
                  Canvas.Left="71" Canvas.Top="71" Opacity="1"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
@@ -52,6 +46,16 @@
                 <ScaleTransform x:Name="CoreScale" ScaleX="1" ScaleY="1"/>
             </Ellipse.RenderTransform>
         </Ellipse>
+        <Canvas x:Name="RainbowWashCanvas" Width="168" Height="168"
+                Canvas.Left="71" Canvas.Top="71" Opacity="0.72"
+                RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
+            <Canvas.Clip>
+                <EllipseGeometry Center="84,84" RadiusX="84" RadiusY="84"/>
+            </Canvas.Clip>
+            <Canvas.RenderTransform>
+                <ScaleTransform x:Name="RainbowWashScale" ScaleX="1" ScaleY="1"/>
+            </Canvas.RenderTransform>
+        </Canvas>
         <StackPanel Width="148" Canvas.Left="81" Canvas.Top="132"
                     IsHitTestVisible="False">
             <TextBlock x:Name="CenterLabel" Text="Balanced"
