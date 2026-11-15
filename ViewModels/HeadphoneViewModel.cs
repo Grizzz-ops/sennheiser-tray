@@ -29,6 +29,7 @@ namespace SennheiserTray
         private readonly DispatcherTimer _focusCycleTimer;
         private readonly DispatcherTimer _batteryPollTimer;
         private readonly DispatcherTimer _playbackVolumeTimer;
+        private readonly DispatcherTimer _autoConnectTimer;
         private readonly SemaphoreSlim _connectSemaphore = new(1, 1);
         private readonly SemaphoreSlim _headsetOperationSemaphore = new(1, 1);
         private readonly CancellationTokenSource _lifetime = new();
@@ -49,6 +50,8 @@ namespace SennheiserTray
         private bool? _autoAncEnabled;
         private bool _isConnected;
         private bool _isDarkTheme;
+        private bool _isAutoConnectEnabled = true;
+        private bool _isLaunchOnStartup;
         private bool _bassBoostEnabled;
         private bool _isBassImpactEnabled;
         private bool _isBassImpactBusy;
@@ -76,6 +79,7 @@ namespace SennheiserTray
         private bool _isUpdatingAutoToggle;
         private bool _isBatteryPollInProgress;
         private bool _isRefreshingPlaybackVolume;
+        private bool _isAutoConnectScanInProgress;
         private bool _isPlaybackVolumeAvailable;
         private bool _hasLoggedPlaybackVolumeError;
         private int _modeBeforeAdaptive = AncModeRules.Custom;
@@ -195,18 +199,34 @@ namespace SennheiserTray
                 Interval = TimeSpan.FromSeconds(5)
             };
             _playbackVolumeTimer.Tick += PlaybackVolumeTimer_Tick;
+            _autoConnectTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+            {
+                Interval = TimeSpan.FromSeconds(20)
+            };
+            _autoConnectTimer.Tick += AutoConnectTimer_Tick;
 
             try
             {
                 _settingsStore.Load();
                 _isGamingLatencyHintDismissed = _settingsStore.GamingLatencyHintDismissed;
                 _isDarkTheme = _settingsStore.IsDarkTheme;
+                _isAutoConnectEnabled = _settingsStore.AutoConnectEnabled;
                 ThemeManager.Apply(_isDarkTheme);
             }
             catch (Exception ex)
             {
                 AppLogger.LogException("Could not load local settings", ex);
                 LastCommand = $"SETTINGS LOAD ERROR -> {ex.Message}";
+            }
+
+            try
+            {
+                _isLaunchOnStartup = StartupRegistration.IsEnabled();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogException("Could not read Windows startup registration", ex);
+                LastCommand = $"STARTUP SETTING ERROR -> {ex.Message}";
             }
 
             RefreshMicrophoneMuteState();
@@ -429,6 +449,70 @@ namespace SennheiserTray
 
         public bool IsDarkTheme => _isDarkTheme;
         public string ThemeToggleText => IsDarkTheme ? "Switch to day theme" : "Switch to night theme";
+
+        public bool IsAutoConnectEnabled
+        {
+            get => _isAutoConnectEnabled;
+            set
+            {
+                if (_isAutoConnectEnabled == value)
+                {
+                    return;
+                }
+
+                try
+                {
+                    _settingsStore.SetAutoConnectEnabled(value);
+                    SetProperty(ref _isAutoConnectEnabled, value);
+                    LastCommand = value
+                        ? "HEADSET -> Automatic connection enabled"
+                        : "HEADSET -> Automatic connection disabled";
+                    if (value)
+                    {
+                        _ = ScanAndConnectAsync();
+                    }
+                    else if (!IsConnected && StatusText == "Reconnecting...")
+                    {
+                        StatusText = "Disconnected";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogException("Could not save automatic headset connection setting", ex);
+                    OnPropertyChanged(nameof(IsAutoConnectEnabled));
+                    LastCommand = $"AUTO-CONNECT SETTING ERROR -> {ex.Message}";
+                }
+            }
+        }
+
+        public bool IsLaunchOnStartup
+        {
+            get => _isLaunchOnStartup;
+            set
+            {
+                if (_isLaunchOnStartup == value)
+                {
+                    return;
+                }
+
+                try
+                {
+                    StartupRegistration.SetEnabled(value);
+                    if (SetProperty(ref _isLaunchOnStartup, value))
+                    {
+                        LastCommand = value
+                            ? "STARTUP -> Sennheiser Control will launch when you sign in"
+                            : "STARTUP -> Automatic launch disabled";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogException("Could not update Windows startup registration", ex);
+                    OnPropertyChanged(nameof(IsLaunchOnStartup));
+                    LastCommand = $"STARTUP SETTING ERROR -> {ex.Message}";
+                }
+            }
+        }
 
         private void ToggleTheme()
         {
@@ -1165,7 +1249,9 @@ namespace SennheiserTray
             try
             {
                 await LoadAvailableDevicesAsync();
-                if (!string.IsNullOrWhiteSpace(SelectedDeviceId) && !await TryConnectAsync())
+                if (IsAutoConnectEnabled
+                    && !string.IsNullOrWhiteSpace(SelectedDeviceId)
+                    && !await TryConnectAsync())
                 {
                     StartAutoReconnect();
                 }
@@ -1175,6 +1261,10 @@ namespace SennheiserTray
                 AppLogger.LogException("Headphone view model initialization failed", ex);
                 LastCommand = $"INITIALIZATION ERROR -> {ex.Message}";
                 StatusText = "Device search failed";
+            }
+            finally
+            {
+                _autoConnectTimer.Start();
             }
         }
 
@@ -1289,8 +1379,11 @@ namespace SennheiserTray
                 }
                 else if (!_lifetime.IsCancellationRequested)
                 {
-                    StatusText = "Reconnecting...";
-                    StartAutoReconnect();
+                    StatusText = IsAutoConnectEnabled ? "Reconnecting..." : "Disconnected";
+                    if (IsAutoConnectEnabled)
+                    {
+                        StartAutoReconnect();
+                    }
                 }
             }));
         }
@@ -1540,6 +1633,7 @@ namespace SennheiserTray
         {
             if (_isDisposed
                 || _lifetime.IsCancellationRequested
+                || !IsAutoConnectEnabled
                 || string.IsNullOrWhiteSpace(SelectedDeviceId)
                 || (_reconnectTask != null && !_reconnectTask.IsCompleted))
             {
@@ -1554,11 +1648,15 @@ namespace SennheiserTray
             int attempt = 0;
             try
             {
-                while (!cancellationToken.IsCancellationRequested && !_service.IsConnected)
+                while (!cancellationToken.IsCancellationRequested
+                    && IsAutoConnectEnabled
+                    && !_service.IsConnected)
                 {
                     StatusText = "Reconnecting...";
                     await Task.Delay(ReconnectBackoff.DelayForAttempt(attempt), cancellationToken);
-                    if (cancellationToken.IsCancellationRequested || _service.IsConnected)
+                    if (cancellationToken.IsCancellationRequested
+                        || !IsAutoConnectEnabled
+                        || _service.IsConnected)
                     {
                         return;
                     }
@@ -1567,6 +1665,7 @@ namespace SennheiserTray
                     attempt++;
                 }
             }
+
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
             }
@@ -1575,6 +1674,43 @@ namespace SennheiserTray
                 AppLogger.LogException("Automatic reconnect failed", ex);
                 StatusText = "Reconnecting...";
                 LastCommand = $"RECONNECT ERROR -> {ex.Message}";
+            }
+        }
+
+        private async void AutoConnectTimer_Tick(object? sender, EventArgs e)
+        {
+            await ScanAndConnectAsync();
+        }
+
+        private async Task ScanAndConnectAsync()
+        {
+            if (_isDisposed
+                || !IsAutoConnectEnabled
+                || _service.IsConnected
+                || _isAutoConnectScanInProgress
+                || (_reconnectTask != null && !_reconnectTask.IsCompleted))
+            {
+                return;
+            }
+
+            _isAutoConnectScanInProgress = true;
+            try
+            {
+                await LoadAvailableDevicesAsync();
+                if (!string.IsNullOrWhiteSpace(SelectedDeviceId)
+                    && !await TryConnectAsync())
+                {
+                    StartAutoReconnect();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogException("Automatic headset detection failed", ex);
+                LastCommand = $"AUTO-CONNECT ERROR -> {ex.Message}";
+            }
+            finally
+            {
+                _isAutoConnectScanInProgress = false;
             }
         }
 
@@ -2110,11 +2246,13 @@ namespace SennheiserTray
             _focusCycleTimer.Stop();
             _batteryPollTimer.Stop();
             _playbackVolumeTimer.Stop();
+            _autoConnectTimer.Stop();
             _modePinTimer.Tick -= ModePinTimer_Tick;
             _microphoneStateTimer.Tick -= MicrophoneStateTimer_Tick;
             _focusCycleTimer.Tick -= FocusCycleTimer_Tick;
             _batteryPollTimer.Tick -= BatteryPollTimer_Tick;
             _playbackVolumeTimer.Tick -= PlaybackVolumeTimer_Tick;
+            _autoConnectTimer.Tick -= AutoConnectTimer_Tick;
             StopAdaptiveEq(restoreManualEq: false);
             _audioLevelService.AudioLevelAvailable -= AudioLevelService_AudioLevelAvailable;
             _audioLevelService.SpectrumAnalyzed -= AudioLevelService_SpectrumAnalyzed;

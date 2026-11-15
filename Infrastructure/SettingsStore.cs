@@ -13,6 +13,7 @@ namespace SennheiserTray
 
         public bool GamingLatencyHintDismissed { get; private set; }
         public bool IsDarkTheme { get; private set; }
+        public bool AutoConnectEnabled { get; private set; } = true;
 
         public void Load()
         {
@@ -22,6 +23,7 @@ namespace SennheiserTray
                 {
                     GamingLatencyHintDismissed = false;
                     IsDarkTheme = false;
+                    AutoConnectEnabled = true;
                     return;
                 }
 
@@ -29,6 +31,7 @@ namespace SennheiserTray
                     File.ReadAllText(SettingsPath));
                 GamingLatencyHintDismissed = data?.GamingLatencyHintDismissed ?? false;
                 IsDarkTheme = data?.IsDarkTheme ?? false;
+                AutoConnectEnabled = data?.AutoConnectEnabled ?? true;
             }
         }
 
@@ -36,7 +39,10 @@ namespace SennheiserTray
         {
             lock (_gate)
             {
-                SaveSettings(gamingLatencyHintDismissed: true, isDarkTheme: IsDarkTheme);
+                SaveSettings(
+                    gamingLatencyHintDismissed: true,
+                    isDarkTheme: IsDarkTheme,
+                    autoConnectEnabled: AutoConnectEnabled);
                 GamingLatencyHintDismissed = true;
             }
         }
@@ -45,21 +51,39 @@ namespace SennheiserTray
         {
             lock (_gate)
             {
-                SaveSettings(GamingLatencyHintDismissed, isDarkTheme);
+                SaveSettings(GamingLatencyHintDismissed, isDarkTheme, AutoConnectEnabled);
                 IsDarkTheme = isDarkTheme;
             }
         }
 
-        private static void SaveSettings(bool gamingLatencyHintDismissed, bool isDarkTheme)
+        public void SetAutoConnectEnabled(bool autoConnectEnabled)
+        {
+            lock (_gate)
+            {
+                SaveSettings(GamingLatencyHintDismissed, IsDarkTheme, autoConnectEnabled);
+                AutoConnectEnabled = autoConnectEnabled;
+            }
+        }
+
+        private static void SaveSettings(
+            bool gamingLatencyHintDismissed,
+            bool isDarkTheme,
+            bool autoConnectEnabled)
         {
             Directory.CreateDirectory(SettingsDirectory);
             string temporaryPath = SettingsPath + ".tmp";
             File.WriteAllText(
                 temporaryPath,
-                JsonSerializer.Serialize(new SettingsData(gamingLatencyHintDismissed, isDarkTheme)));
+                JsonSerializer.Serialize(new SettingsData(
+                    gamingLatencyHintDismissed,
+                    isDarkTheme,
+                    autoConnectEnabled)));
             File.Move(temporaryPath, SettingsPath, overwrite: true);
         }
 
-        private sealed record SettingsData(bool GamingLatencyHintDismissed, bool IsDarkTheme = false);
+        private sealed record SettingsData(
+            bool GamingLatencyHintDismissed,
+            bool IsDarkTheme = false,
+            bool? AutoConnectEnabled = null);
     }
 }

@@ -304,6 +304,14 @@
                             <Button Content="{Binding ThemeToggleText}" Command="{Binding ToggleThemeCommand}"
                                     Style="{StaticResource ActionButtonStyle}"
                                     HorizontalAlignment="Left" Margin="0,0,0,12"/>
+                            <CheckBox Content="Connect automatically when headset is available"
+                                      IsChecked="{Binding IsAutoConnectEnabled, Mode=TwoWay}"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      FontSize="11" Margin="0,0,0,8"/>
+                            <CheckBox Content="Launch with Windows"
+                                      IsChecked="{Binding IsLaunchOnStartup, Mode=TwoWay}"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      FontSize="11" Margin="0,0,0,14"/>
                             <TextBlock Text="Windows output volume" Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="12" Margin="0,0,0,2"/>
                             <DockPanel Margin="0,0,0,8">
