@@ -15,7 +15,7 @@ The interface uses a warm, neutral palette with a softly blended, continuously s
 - See a battery-life estimate in the Lab screen after enough recent readings show a clear battery trend. It needs at least four readings over six minutes and a detectable level change; the estimate and charging state are approximate and inferred from the trend.
 - See an inferred lightning-bolt charging indicator after the battery trend shows a sustained rise. A low-battery notification appears at 20% and is re-armed after the battery rises above 25%.
 - Use the system-tray menu to open the app, switch sound profiles or noise-control modes, and adjust Windows playback volume in 5% steps.
-- Enable automatic headset detection and connection, and optionally launch the app when you sign in to Windows. Detection checks for compatible paired headsets every 20 seconds while disconnected.
+- Enable automatic headset detection and connection, and optionally launch the app when you sign in to Windows. Detection checks for compatible paired headsets every 20 seconds while disconnected and shows a brief notification after an automatic connection.
 - See the custom headset icon in the widget header, window/taskbar icon, and system tray.
 - Orb rendering pauses when the home view is hidden, and the audio-responsive color wash uses fewer gradient layers to reduce idle rendering work.
 - Adjust the current Windows default playback device volume from the Lab settings.

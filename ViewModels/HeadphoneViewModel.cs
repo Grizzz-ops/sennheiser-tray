@@ -270,6 +270,7 @@ namespace SennheiserTray
         public RelayCommand SelectModeCommand { get; }
         public RelayCommand ToggleModePinCommand { get; }
         public RelayCommand RestorePreviousModeCommand { get; }
+        public event Action<string>? AutomaticConnectionSucceeded;
         public ObservableCollection<SennheiserDevice> Devices { get; } = new();
         public ObservableCollection<double> EqValues { get; }
         public ObservableCollection<ModeChipItem> ModeChipItems { get; }
@@ -1251,7 +1252,7 @@ namespace SennheiserTray
                 await LoadAvailableDevicesAsync();
                 if (IsAutoConnectEnabled
                     && !string.IsNullOrWhiteSpace(SelectedDeviceId)
-                    && !await TryConnectAsync())
+                    && !await TryConnectAsync(isAutomatic: true))
                 {
                     StartAutoReconnect();
                 }
@@ -1323,7 +1324,7 @@ namespace SennheiserTray
             }
         }
 
-        private async Task<bool> TryConnectAsync()
+        private async Task<bool> TryConnectAsync(bool isAutomatic = false)
         {
             await _connectSemaphore.WaitAsync();
             try
@@ -1352,6 +1353,13 @@ namespace SennheiserTray
                 {
                     AppLogger.LogException("Could not remember the selected headset", ex);
                     LastCommand = $"DEVICE SETTING ERROR -> {ex.Message}";
+                }
+
+                if (isAutomatic)
+                {
+                    string connectedDeviceName = _service.ConnectedDeviceName;
+                    _ = _dispatcher.BeginInvoke(new Action(
+                        () => AutomaticConnectionSucceeded?.Invoke(connectedDeviceName)));
                 }
 
                 return true;
@@ -1661,7 +1669,7 @@ namespace SennheiserTray
                         return;
                     }
 
-                    await TryConnectAsync();
+                    await TryConnectAsync(isAutomatic: true);
                     attempt++;
                 }
             }
@@ -1698,7 +1706,7 @@ namespace SennheiserTray
             {
                 await LoadAvailableDevicesAsync();
                 if (!string.IsNullOrWhiteSpace(SelectedDeviceId)
-                    && !await TryConnectAsync())
+                    && !await TryConnectAsync(isAutomatic: true))
                 {
                     StartAutoReconnect();
                 }

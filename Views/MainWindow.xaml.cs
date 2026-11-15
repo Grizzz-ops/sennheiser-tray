@@ -38,6 +38,7 @@ namespace SennheiserTray
             _viewModel = new HeadphoneViewModel();
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            _viewModel.AutomaticConnectionSucceeded += ViewModel_AutomaticConnectionSucceeded;
             InitializeTrayIcon();
             RefreshTrayMenu();
             SourceInitialized += MainWindow_SourceInitialized;
@@ -67,6 +68,7 @@ namespace SennheiserTray
                 }
 
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+                _viewModel.AutomaticConnectionSucceeded -= ViewModel_AutomaticConnectionSucceeded;
                 _viewModel.Dispose();
                 if (_trayIcon != null)
                 {
@@ -237,6 +239,15 @@ namespace SennheiserTray
             {
                 RefreshTrayMenu();
             }
+        }
+
+        private void ViewModel_AutomaticConnectionSucceeded(string deviceName)
+        {
+            _trayIcon?.ShowBalloonTip(
+                4000,
+                "Headset connected",
+                $"Connected to {deviceName}.",
+                WinForms.ToolTipIcon.Info);
         }
 
         private void UpdateLowBatteryAlert()
