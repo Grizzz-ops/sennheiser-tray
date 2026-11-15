@@ -6,9 +6,13 @@ namespace SennheiserTray
         private static readonly TimeSpan MaximumSampleAge = TimeSpan.FromHours(6);
         private static readonly TimeSpan MaximumEstimate = TimeSpan.FromHours(72);
         private const int MaximumSamples = 200;
+        private const int MinimumSamples = 4;
         private const double MinimumTrendPercentPerMinute = 0.02;
         private readonly Queue<(DateTimeOffset Timestamp, int Level)> _samples = new();
         public int SampleCount => _samples.Count;
+        public bool HasMinimumSampleWindow =>
+            _samples.Count >= MinimumSamples
+            && _samples.Last().Timestamp - _samples.Peek().Timestamp >= MinimumSampleWindow;
 
         public void AddSample(DateTimeOffset timestamp, int level)
         {
@@ -39,39 +43,28 @@ namespace SennheiserTray
             }
         }
 
+        public bool? GetChargingState()
+        {
+            if (!TryGetTrend(out double trendPerMinute))
+            {
+                return null;
+            }
+
+            if (trendPerMinute > MinimumTrendPercentPerMinute)
+            {
+                return true;
+            }
+
+            return trendPerMinute < -MinimumTrendPercentPerMinute ? false : null;
+        }
+
         public string? GetEstimate(int currentLevel)
         {
-            if (_samples.Count < 3)
+            if (!TryGetTrend(out double trendPerMinute))
             {
                 return null;
             }
 
-            (DateTimeOffset Timestamp, int Level)[] samples = _samples.ToArray();
-            double elapsedMinutes = (samples[^1].Timestamp - samples[0].Timestamp).TotalMinutes;
-            if (elapsedMinutes < MinimumSampleWindow.TotalMinutes
-                || Math.Abs(samples[^1].Level - samples[0].Level) < 1)
-            {
-                return null;
-            }
-
-            double meanTime = samples.Average(sample =>
-                (sample.Timestamp - samples[0].Timestamp).TotalMinutes);
-            double meanLevel = samples.Average(sample => (double)sample.Level);
-            double covariance = 0;
-            double timeVariance = 0;
-            foreach ((DateTimeOffset timestamp, int level) in samples)
-            {
-                double time = (timestamp - samples[0].Timestamp).TotalMinutes - meanTime;
-                covariance += time * (level - meanLevel);
-                timeVariance += time * time;
-            }
-
-            if (timeVariance <= 0)
-            {
-                return null;
-            }
-
-            double trendPerMinute = covariance / timeVariance;
             bool isCharging = trendPerMinute > MinimumTrendPercentPerMinute;
             if (!isCharging && trendPerMinute >= -MinimumTrendPercentPerMinute)
             {
@@ -94,6 +87,43 @@ namespace SennheiserTray
             return isCharging
                 ? $"Charging · ~{duration} to full"
                 : $"~{duration} left";
+        }
+
+        private bool TryGetTrend(out double trendPerMinute)
+        {
+            trendPerMinute = 0;
+            if (_samples.Count < MinimumSamples)
+            {
+                return false;
+            }
+
+            (DateTimeOffset Timestamp, int Level)[] samples = _samples.ToArray();
+            double elapsedMinutes = (samples[^1].Timestamp - samples[0].Timestamp).TotalMinutes;
+            if (elapsedMinutes < MinimumSampleWindow.TotalMinutes
+                || Math.Abs(samples[^1].Level - samples[0].Level) < 1)
+            {
+                return false;
+            }
+
+            double meanTime = samples.Average(sample =>
+                (sample.Timestamp - samples[0].Timestamp).TotalMinutes);
+            double meanLevel = samples.Average(sample => (double)sample.Level);
+            double covariance = 0;
+            double timeVariance = 0;
+            foreach ((DateTimeOffset timestamp, int level) in samples)
+            {
+                double time = (timestamp - samples[0].Timestamp).TotalMinutes - meanTime;
+                covariance += time * (level - meanLevel);
+                timeVariance += time * time;
+            }
+
+            if (timeVariance <= 0)
+            {
+                return false;
+            }
+
+            trendPerMinute = covariance / timeVariance;
+            return double.IsFinite(trendPerMinute);
         }
 
         public void Reset() => _samples.Clear();

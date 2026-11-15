@@ -290,6 +290,7 @@ namespace SennheiserTray
                 if (SetProperty(ref _batteryLevel, value))
                 {
                     OnPropertyChanged(nameof(BatteryText));
+                    OnPropertyChanged(nameof(IsChargingInferred));
                     OnPropertyChanged(nameof(BatteryEstimateStatus));
                 }
             }
@@ -301,8 +302,11 @@ namespace SennheiserTray
                 : $"Battery {level}%"
             : "Battery --";
 
+        public bool IsChargingInferred =>
+            IsConnected && _batteryTrendEstimator.GetChargingState() == true;
+
         public string BatteryToolTip =>
-            "Time and charging estimates are inferred from recent battery readings, not reported by the headset. Battery health and charging control are not available.";
+            "The charging indicator and time estimate are inferred from recent battery readings, not reported directly by the headset.";
 
         public string BatteryEstimateStatus
         {
@@ -323,9 +327,14 @@ namespace SennheiserTray
                     return BatteryEstimateText;
                 }
 
-                return _batteryTrendEstimator.SampleCount < 4
-                    ? $"Learning battery use · {_batteryTrendEstimator.SampleCount}/4 readings"
-                    : "Waiting for battery level to change before estimating.";
+                if (_batteryTrendEstimator.SampleCount < 4)
+                {
+                    return $"Learning battery use · {_batteryTrendEstimator.SampleCount}/4 readings";
+                }
+
+                return _batteryTrendEstimator.HasMinimumSampleWindow
+                    ? "Waiting for battery level to change before estimating."
+                    : "Learning battery trend · collecting readings over 6 minutes.";
             }
         }
 
@@ -1401,6 +1410,7 @@ namespace SennheiserTray
         private void UpdateBatteryEstimate(int batteryLevel)
         {
             _batteryTrendEstimator.AddSample(DateTimeOffset.UtcNow, batteryLevel);
+            OnPropertyChanged(nameof(IsChargingInferred));
             string estimate = _batteryTrendEstimator.GetEstimate(batteryLevel) ?? "";
             if (BatteryEstimateText == estimate)
             {

@@ -36,11 +36,17 @@
                            Foreground="{Binding StatusForeground}" FontSize="12"
                            FontWeight="SemiBold" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
-                <TextBlock Grid.Column="2" Text="{Binding BatteryText}"
-                           Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
-                           VerticalAlignment="Center" Margin="8,0"
-                           ToolTip="{Binding BatteryToolTip}"
-                           Visibility="{Binding IsConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="8,0"
+                            Visibility="{Binding IsConnected, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            ToolTip="{Binding BatteryToolTip}">
+                    <TextBlock Text="⚡" Foreground="{DynamicResource AccentBrush}" FontSize="11"
+                               FontWeight="Bold" Margin="0,0,3,0"
+                               Visibility="{Binding IsChargingInferred, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               AutomationProperties.Name="Charging inferred from battery trend"/>
+                    <TextBlock Text="{Binding BatteryText}" Foreground="{DynamicResource TextMutedBrush}"
+                               FontSize="10" VerticalAlignment="Center"/>
+                </StackPanel>
                 <Button Grid.Column="3" Content="Connect" Command="{Binding ConnectCommand}"
                         Style="{StaticResource ActionButtonStyle}" Padding="8,4"
                         Visibility="{Binding IsDisconnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
