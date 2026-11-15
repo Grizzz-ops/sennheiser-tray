@@ -191,7 +191,7 @@ namespace SennheiserTray
                 : 0;
             double idleBreath = (Math.Sin(now / (double)Stopwatch.Frequency * (2 * Math.PI / 4.2)) + 1) * 0.5;
             double liveLevel = AudioLevel;
-            double scale = 1 + connectPulse + liveLevel * 0.12 + (liveLevel < 0.015 ? idleBreath * 0.025 : 0);
+            double scale = 1 + connectPulse + liveLevel * 0.2 + (liveLevel < 0.015 ? idleBreath * 0.03 : 0);
             double transitionProgress = Math.Clamp(
                 (now - _focusTransitionStartTicks) / (double)Stopwatch.Frequency / 0.8,
                 0,
@@ -205,13 +205,13 @@ namespace SennheiserTray
 
             GlowScale.ScaleX = scale;
             GlowScale.ScaleY = scale;
-            CoreScale.ScaleX = 1 + connectPulse * 0.25 + liveLevel * 0.055;
+            CoreScale.ScaleX = 1 + connectPulse * 0.3 + liveLevel * 0.1;
             CoreScale.ScaleY = CoreScale.ScaleX;
-            double normalOpacity = (IsConnected ? 0.38 + liveLevel * 0.4 : 0.12) + connectPulse;
+            double normalOpacity = (IsConnected ? 0.42 + liveLevel * 0.5 : 0.12) + connectPulse;
             OrbGlow.Opacity = _isFocusTransitionActive
-                ? focusOpacity + liveLevel * 0.18
+                ? focusOpacity + liveLevel * 0.24
                 : IsFocusBreak
-                    ? _focusTransitionTargetOpacity + liveLevel * 0.18
+                    ? _focusTransitionTargetOpacity + liveLevel * 0.24
                     : normalOpacity;
             OrbCore.Opacity = IsConnected ? 1 : 0.58;
         }
@@ -219,6 +219,7 @@ namespace SennheiserTray
         private void UpdateOrbColor(double elapsedSeconds)
         {
             System.Windows.Media.Color color = GetSpectrumColor(elapsedSeconds);
+            System.Windows.Media.Color secondaryColor = GetSpectrumColor(elapsedSeconds + 1.6);
             _orbAccentBrush.Color = color;
 
             if (OrbGlow.Fill is not RadialGradientBrush gradient || gradient.GradientStops.Count < 3)
@@ -226,8 +227,11 @@ namespace SennheiserTray
                 return;
             }
 
-            gradient.GradientStops[0].Color = System.Windows.Media.Color.FromArgb(0x62, color.R, color.G, color.B);
-            gradient.GradientStops[1].Color = System.Windows.Media.Color.FromArgb(0x20, color.R, color.G, color.B);
+            byte audioAlpha = (byte)Math.Round(AudioLevel * 0x38);
+            gradient.GradientStops[0].Color = System.Windows.Media.Color.FromArgb(
+                (byte)(0x78 + audioAlpha), color.R, color.G, color.B);
+            gradient.GradientStops[1].Color = System.Windows.Media.Color.FromArgb(
+                (byte)(0x38 + audioAlpha / 2), secondaryColor.R, secondaryColor.G, secondaryColor.B);
             gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(0x00, color.R, color.G, color.B);
         }
 
@@ -235,13 +239,14 @@ namespace SennheiserTray
         {
             System.Windows.Media.Color[] colors =
             {
-                System.Windows.Media.Color.FromRgb(0x6E, 0xA9, 0x98),
-                System.Windows.Media.Color.FromRgb(0x8B, 0x8D, 0xBC),
-                System.Windows.Media.Color.FromRgb(0xC4, 0x83, 0x7C),
-                System.Windows.Media.Color.FromRgb(0xCA, 0x9B, 0x68),
-                System.Windows.Media.Color.FromRgb(0x72, 0xA5, 0xB0)
+                System.Windows.Media.Color.FromRgb(0x25, 0xC9, 0xD0),
+                System.Windows.Media.Color.FromRgb(0x8D, 0x6B, 0xF5),
+                System.Windows.Media.Color.FromRgb(0xF0, 0x5D, 0xB5),
+                System.Windows.Media.Color.FromRgb(0xFF, 0x86, 0x55),
+                System.Windows.Media.Color.FromRgb(0x75, 0xD6, 0x84),
+                System.Windows.Media.Color.FromRgb(0x42, 0x9D, 0xF5)
             };
-            const double secondsPerColor = 5;
+            const double secondsPerColor = 3.8;
             double colorPosition = elapsedSeconds / secondsPerColor;
             int currentColorIndex = (int)colorPosition % colors.Length;
             int nextColorIndex = (currentColorIndex + 1) % colors.Length;
@@ -289,8 +294,8 @@ namespace SennheiserTray
                 return;
             }
 
-            double radius = 123;
-            double center = 135;
+            double radius = 141;
+            double center = 155;
             double startAngle = 135;
             double sweepAngle = 270 * Level / 100;
             double endAngle = startAngle + sweepAngle;
@@ -332,11 +337,11 @@ namespace SennheiserTray
             }
 
             _dragStart = e.GetPosition(DialCanvas);
-            double dx = _dragStart.X - 135;
-            double dy = _dragStart.Y - 135;
+            double dx = _dragStart.X - 155;
+            double dy = _dragStart.Y - 155;
             double distanceSquared = dx * dx + dy * dy;
-            _pointerStartedOnCore = distanceSquared < 68 * 68;
-            _pointerStartedOnDial = distanceSquared >= 70 * 70 && distanceSquared <= 134 * 134;
+            _pointerStartedOnCore = distanceSquared < 82 * 82;
+            _pointerStartedOnDial = distanceSquared >= 84 * 84 && distanceSquared <= 153 * 153;
             if (!_pointerStartedOnCore && !_pointerStartedOnDial)
             {
                 return;
@@ -368,7 +373,7 @@ namespace SennheiserTray
                 return;
             }
 
-            double angle = Math.Atan2(position.Y - 135, position.X - 135) * 180 / Math.PI;
+            double angle = Math.Atan2(position.Y - 155, position.X - 155) * 180 / Math.PI;
             Level = OrbDialRules.LevelFromAngle(angle);
             Execute(LevelCommand, Level);
         }

@@ -1,30 +1,30 @@
 <UserControl x:Class="SennheiserTray.OrbControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Width="270" Height="270"
+             Width="310" Height="310"
              AutomationProperties.Name="Noise and awareness control">
-    <Canvas x:Name="DialCanvas" Width="270" Height="270"
+    <Canvas x:Name="DialCanvas" Width="310" Height="310"
             Background="Transparent"
             MouseLeftButtonDown="DialCanvas_MouseLeftButtonDown"
             MouseMove="DialCanvas_MouseMove"
             MouseLeftButtonUp="DialCanvas_MouseLeftButtonUp"
             MouseLeave="DialCanvas_MouseLeave">
-        <Ellipse x:Name="ModeRing" Width="246" Height="246" Canvas.Left="12" Canvas.Top="12"
+        <Ellipse x:Name="ModeRing" Width="284" Height="284" Canvas.Left="13" Canvas.Top="13"
                  Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.2"
                  Opacity="0.22" IsHitTestVisible="False"/>
         <Path x:Name="LevelArc" Stroke="#A95736"
-              StrokeThickness="2.5" StrokeStartLineCap="Round"
+              StrokeThickness="3.2" StrokeStartLineCap="Round"
               StrokeEndLineCap="Round" IsHitTestVisible="False"/>
-        <Ellipse x:Name="DialThumb" Width="12" Height="12"
+        <Ellipse x:Name="DialThumb" Width="14" Height="14"
                  Fill="#A95736" Stroke="#FFFDF8"
                  StrokeThickness="1.5" IsHitTestVisible="False"/>
-        <Ellipse x:Name="OrbGlow" Width="192" Height="192"
-                 Canvas.Left="39" Canvas.Top="39" Opacity="0.2"
+        <Ellipse x:Name="OrbGlow" Width="222" Height="222"
+                 Canvas.Left="44" Canvas.Top="44" Opacity="0.2"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop x:Name="OrbGlowCenter" Color="#70C78B78" Offset="0"/>
-                    <GradientStop x:Name="OrbGlowMid" Color="#20C78B78" Offset="0.55"/>
+                    <GradientStop x:Name="OrbGlowCenter" Color="#90C78B78" Offset="0"/>
+                    <GradientStop x:Name="OrbGlowMid" Color="#40C78B78" Offset="0.58"/>
                     <GradientStop x:Name="OrbGlowEdge" Color="#00C78B78" Offset="1"/>
                 </RadialGradientBrush>
             </Ellipse.Fill>
@@ -32,8 +32,8 @@
                 <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1"/>
             </Ellipse.RenderTransform>
         </Ellipse>
-        <Ellipse x:Name="OrbCore" Width="142" Height="142"
-                 Canvas.Left="64" Canvas.Top="64" Opacity="1"
+        <Ellipse x:Name="OrbCore" Width="168" Height="168"
+                 Canvas.Left="71" Canvas.Top="71" Opacity="1"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
@@ -46,18 +46,18 @@
                 <ScaleTransform x:Name="CoreScale" ScaleX="1" ScaleY="1"/>
             </Ellipse.RenderTransform>
         </Ellipse>
-        <StackPanel Width="130" Canvas.Left="70" Canvas.Top="112"
+        <StackPanel Width="148" Canvas.Left="81" Canvas.Top="132"
                     IsHitTestVisible="False">
             <TextBlock x:Name="CenterLabel" Text="Balanced"
-                       Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20"
+                       Foreground="{DynamicResource TextPrimaryBrush}" FontSize="22"
                        FontWeight="SemiBold" TextAlignment="Center"/>
             <TextBlock x:Name="LevelCaption" Text="50"
                        Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
                        Margin="0,5,0,0" TextAlignment="Center"/>
         </StackPanel>
         <TextBlock Text="Noise" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
-                   Canvas.Left="54" Canvas.Top="0" IsHitTestVisible="False"/>
+                   Canvas.Left="60" Canvas.Top="7" IsHitTestVisible="False"/>
         <TextBlock Text="Awareness" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
-                   Canvas.Right="35" Canvas.Top="0" IsHitTestVisible="False"/>
+                   Canvas.Right="39" Canvas.Top="7" IsHitTestVisible="False"/>
     </Canvas>
 </UserControl>

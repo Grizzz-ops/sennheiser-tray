@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:SennheiserTray"
         Title="Sennheiser Control"
-        Width="340" Height="520" MinWidth="340" MinHeight="520"
+        Width="360" Height="540" MinWidth="340" MinHeight="520"
         WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True"
@@ -19,7 +19,7 @@
     <Border Background="{DynamicResource AppBackgroundBrush}">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="42"/>
+                <RowDefinition Height="38"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -53,15 +53,15 @@
             </Grid>
 
             <Grid Grid.Row="1">
-                <Grid x:Name="HomeScreen" Margin="14,0,14,10"
+                <Grid x:Name="HomeScreen" Margin="10,0,10,8"
                       IsEnabled="{Binding CanChangeMode}"
                       Visibility="{Binding IsHomeScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
-                        <RowDefinition Height="46"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="24"/>
                         <RowDefinition Height="42"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="40"/>
                     </Grid.RowDefinitions>
 
                     <ToggleButton Grid.Row="0" Content="Auto" IsEnabled="False"
@@ -73,7 +73,8 @@
 
                     <local:ModeChips Grid.Row="1" VerticalAlignment="Center"/>
 
-                    <local:OrbControl Grid.Row="2" HorizontalAlignment="Center"
+                    <local:OrbControl Grid.Row="2" Width="310" Height="310"
+                                      HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Level="{Binding AncLevel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       Label="{Binding OrbLabel}"
