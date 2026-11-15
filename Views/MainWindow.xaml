@@ -114,17 +114,21 @@
                                            FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </DockPanel>
 
-                            <DockPanel Margin="0,0,0,8">
-                                <StackPanel DockPanel.Dock="Left">
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
                                     <TextBlock Text="EQUALIZER" Foreground="{DynamicResource TextSecondaryBrush}"
                                                FontSize="10" FontWeight="Bold"/>
                                     <TextBlock Text="Shape your sound" Foreground="{DynamicResource TextPrimaryBrush}"
                                                FontSize="20" FontWeight="SemiBold" Margin="0,3,0,0"/>
                                 </StackPanel>
-                                <Button Content="Reset flat" Command="{Binding ResetEqCommand}"
+                                <Button Grid.Column="1" Content="Reset flat" Command="{Binding ResetEqCommand}"
                                         Style="{StaticResource ActionButtonStyle}" VerticalAlignment="Center"
-                                        DockPanel.Dock="Right"/>
-                            </DockPanel>
+                                        Margin="12,0,0,0"/>
+                            </Grid>
 
                             <Border Background="#101720" BorderThickness="0"
                                     CornerRadius="8" Padding="4" Margin="0,0,0,8">
@@ -170,13 +174,20 @@
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[4], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
 
-                            <DockPanel Margin="0,5,0,5">
-                                <Button Content="{Binding BassBoostText}" Command="{Binding BassBoostCommand}"
+                            <Grid Margin="0,5,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="{Binding BassBoostText}"
+                                        Command="{Binding BassBoostCommand}"
                                         IsEnabled="{Binding CanToggleBassBoost}"
-                                        Style="{StaticResource ActionButtonStyle}" DockPanel.Dock="Left"/>
-                                <Button Content="{Binding BassImpactText}" Command="{Binding BassImpactCommand}"
-                                        Style="{StaticResource ActionButtonStyle}" DockPanel.Dock="Right"/>
-                            </DockPanel>
+                                        Style="{StaticResource ActionButtonStyle}"/>
+                                <Button Grid.Column="2" Content="{Binding BassImpactText}"
+                                        Command="{Binding BassImpactCommand}"
+                                        Style="{StaticResource ActionButtonStyle}"/>
+                            </Grid>
                             <TextBlock Text="Bass Impact boosts headset DSP and EQ; it does not create physical vibration."
                                        Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                                        TextWrapping="Wrap" Margin="0,4,0,8"/>

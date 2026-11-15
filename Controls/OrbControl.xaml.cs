@@ -44,7 +44,8 @@ namespace SennheiserTray
         private bool _isFocusTransitionActive;
         private Point _dragStart;
         private bool _isDragging;
-        private bool _pointerStartedInOrb;
+        private bool _pointerStartedOnCore;
+        private bool _pointerStartedOnDial;
 
         private static readonly SolidColorBrush LiveCallBrush = CreateFrozenBrush(0xA7, 0x8B, 0xFA);
         private static readonly SolidColorBrush MutedCallBrush = CreateFrozenBrush(0xFF, 0x5D, 0x65);
@@ -242,10 +243,11 @@ namespace SennheiserTray
                 return;
             }
 
-            double radius = 121;
+            double radius = 123;
             double center = 135;
             double startAngle = 135;
-            double endAngle = startAngle + 270 * Level / 100;
+            double sweepAngle = 270 * Level / 100;
+            double endAngle = startAngle + sweepAngle;
             Point start = PointOnCircle(center, radius, startAngle);
             Point end = PointOnCircle(center, radius, endAngle);
             var figure = new PathFigure { StartPoint = start, IsClosed = false };
@@ -253,7 +255,7 @@ namespace SennheiserTray
                 end,
                 new System.Windows.Size(radius, radius),
                 0,
-                Level > 50,
+                sweepAngle > 180,
                 SweepDirection.Clockwise,
                 true));
             var geometry = new PathGeometry();
@@ -286,7 +288,14 @@ namespace SennheiserTray
             _dragStart = e.GetPosition(DialCanvas);
             double dx = _dragStart.X - 135;
             double dy = _dragStart.Y - 135;
-            _pointerStartedInOrb = dx * dx + dy * dy < 68 * 68;
+            double distanceSquared = dx * dx + dy * dy;
+            _pointerStartedOnCore = distanceSquared < 68 * 68;
+            _pointerStartedOnDial = distanceSquared >= 70 * 70 && distanceSquared <= 134 * 134;
+            if (!_pointerStartedOnCore && !_pointerStartedOnDial)
+            {
+                return;
+            }
+
             _isDragging = false;
             DialCanvas.CaptureMouse();
             e.Handled = true;
@@ -294,7 +303,7 @@ namespace SennheiserTray
 
         private void DialCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (!DialCanvas.IsMouseCaptured || _pointerStartedInOrb)
+            if (!DialCanvas.IsMouseCaptured || !_pointerStartedOnDial)
             {
                 return;
             }
@@ -326,13 +335,14 @@ namespace SennheiserTray
             }
 
             DialCanvas.ReleaseMouseCapture();
-            if (!_isDragging && _pointerStartedInOrb)
+            if (!_isDragging && _pointerStartedOnCore)
             {
                 Execute(ToggleCommand, null);
             }
 
             _isDragging = false;
-            _pointerStartedInOrb = false;
+            _pointerStartedOnCore = false;
+            _pointerStartedOnDial = false;
             e.Handled = true;
         }
 

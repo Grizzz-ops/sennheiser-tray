@@ -41,6 +41,7 @@ namespace SennheiserTray
         private int _ancMode = -1;
         private double _ancLevel;
         private double _audioLevel;
+        private int? _batteryLevel;
         private bool? _autoAncEnabled;
         private bool _isConnected;
         private bool _bassBoostEnabled;
@@ -260,7 +261,22 @@ namespace SennheiserTray
                     ? MediaBrushes.Gold
                     : new SolidColorBrush(MediaColor.FromRgb(107, 114, 128));
 
-        public string BatteryText => "Battery unavailable";
+        public int? BatteryLevel
+        {
+            get => _batteryLevel;
+            private set
+            {
+                if (SetProperty(ref _batteryLevel, value))
+                {
+                    OnPropertyChanged(nameof(BatteryText));
+                }
+            }
+        }
+
+        public string BatteryText => BatteryLevel is int level
+            ? $"Battery {level}%"
+            : "Battery --";
+
         public string ConnectButtonText => IsConnected ? "Reconnect" : "Connect";
         public bool IsDisconnected => !IsConnected;
 
@@ -277,6 +293,11 @@ namespace SennheiserTray
             {
                 if (SetProperty(ref _isConnected, value))
                 {
+                    if (!value)
+                    {
+                        BatteryLevel = null;
+                    }
+
                     OnPropertyChanged(nameof(StatusForeground));
                     OnPropertyChanged(nameof(ConnectionBrush));
                     OnPropertyChanged(nameof(ConnectButtonText));
@@ -1139,9 +1160,51 @@ namespace SennheiserTray
         {
             _dispatcher.BeginInvoke(new Action(() =>
             {
+                if (commandId == GaiaCommands.BatteryNotification
+                    && TryParseBatteryLevel(payload, out int batteryLevel))
+                {
+                    BatteryLevel = batteryLevel;
+                    return;
+                }
+
                 LastCommand =
                     $"GAIA NOTIFICATION 0x{commandId:X4} -> {BitConverter.ToString(payload).Replace("-", " ")}";
             }));
+        }
+
+        private static bool TryParseBatteryLevel(byte[]? payload, out int batteryLevel)
+        {
+            batteryLevel = 0;
+            if (payload is not { Length: > 0 })
+            {
+                return false;
+            }
+
+            if (payload.Length == 1)
+            {
+                batteryLevel = payload[0];
+                return batteryLevel <= 100;
+            }
+
+            int sourceCount = payload[0];
+            if (sourceCount == 0 || sourceCount != payload.Length - 1)
+            {
+                return false;
+            }
+
+            int highestLevel = 0;
+            for (int index = 1; index < payload.Length; index++)
+            {
+                if (payload[index] > 100)
+                {
+                    return false;
+                }
+
+                highestLevel = Math.Max(highestLevel, payload[index]);
+            }
+
+            batteryLevel = highestLevel;
+            return true;
         }
 
         private async Task SynchronizeHeadsetStateAsync()
@@ -1155,10 +1218,36 @@ namespace SennheiserTray
             {
                 var stateLogs = new List<string>
                 {
+                    "Battery not read",
                     "ANC state not read (GET command unverified)",
                     "ANC level not read (GET command unverified)",
                     "EQ not read (GET command unverified)"
                 };
+
+                GaiaResult batterySubscription = await _service.SendPacketAsync(
+                    GaiaCommands.NotificationRegister,
+                    new[] { GaiaCommands.BatteryFeature });
+                GaiaResult battery = await _service.RequestAsync(
+                    GaiaCommands.BatteryGet,
+                    Array.Empty<byte>(),
+                    GaiaCommands.BatteryReply,
+                    TimeSpan.FromSeconds(2));
+                if (battery.Success && TryParseBatteryLevel(battery.Payload, out int batteryLevel))
+                {
+                    BatteryLevel = batteryLevel;
+                    stateLogs[0] = $"Battery {batteryLevel}% -> {battery.Log}";
+                }
+                else
+                {
+                    stateLogs[0] = battery.Success
+                        ? $"Battery reply invalid -> {BitConverter.ToString(battery.Payload ?? Array.Empty<byte>())}"
+                        : $"Battery unavailable -> {battery.Log}";
+                }
+
+                if (!batterySubscription.Success)
+                {
+                    stateLogs[0] += $" | notification subscription failed -> {batterySubscription.Log}";
+                }
 
                 if (GaiaCommands.IsVerified(GaiaCommands.AncStateGet)
                     && GaiaCommands.IsVerified(GaiaCommands.AncStateReply))

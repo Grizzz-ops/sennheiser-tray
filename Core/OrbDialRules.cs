@@ -6,7 +6,14 @@ namespace SennheiserTray
         {
             double normalizedAngle = ((angleDegrees % 360) + 360) % 360;
             double progress = (normalizedAngle - 135 + 360) % 360;
-            return Math.Round(Math.Clamp(progress, 0, 270) * 100 / 270);
+            if (progress > 270)
+            {
+                double distanceToMaximum = progress - 270;
+                double distanceToMinimum = 360 - progress;
+                return distanceToMaximum <= distanceToMinimum ? 100 : 0;
+            }
+
+            return Math.Round(progress * 100 / 270);
         }
 
         public static string LabelForLevel(double level)
