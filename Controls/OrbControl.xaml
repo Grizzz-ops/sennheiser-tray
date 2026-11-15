@@ -61,7 +61,10 @@
                 <EllipseGeometry Center="84,84" RadiusX="84" RadiusY="84"/>
             </Canvas.Clip>
             <Canvas.RenderTransform>
-                <ScaleTransform x:Name="RainbowWashScale" ScaleX="1" ScaleY="1"/>
+                <TransformGroup>
+                    <ScaleTransform x:Name="RainbowWashScale" ScaleX="1" ScaleY="1"/>
+                    <RotateTransform x:Name="RainbowWashRotation"/>
+                </TransformGroup>
             </Canvas.RenderTransform>
         </Canvas>
         <StackPanel Width="148" Canvas.Left="81" Canvas.Top="132"

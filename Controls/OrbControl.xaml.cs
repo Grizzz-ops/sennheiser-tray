@@ -37,10 +37,10 @@ namespace SennheiserTray
 
         private readonly bool _animationsEnabled = SystemParameters.ClientAreaAnimation;
         private readonly SolidColorBrush _orbAccentBrush = new(System.Windows.Media.Color.FromRgb(169, 87, 54));
-        private readonly List<RadialGradientBrush> _rainbowGlows = new();
         private long _lastRenderTicks;
         private long _animationStartTicks;
         private long _pulseStartTicks;
+        private double _smoothedAudioLevel;
         private long _focusTransitionStartTicks;
         private double _focusTransitionStartOpacity;
         private double _focusTransitionTargetOpacity;
@@ -170,6 +170,7 @@ namespace SennheiserTray
         {
             if (_animationsEnabled)
             {
+                _lastRenderTicks = Stopwatch.GetTimestamp();
                 CompositionTarget.Rendering += CompositionTarget_Rendering;
             }
         }
@@ -180,20 +181,23 @@ namespace SennheiserTray
         private void CompositionTarget_Rendering(object? sender, EventArgs e)
         {
             long now = Stopwatch.GetTimestamp();
-            if (now - _lastRenderTicks < Stopwatch.Frequency / 30)
-            {
-                return;
-            }
-
+            double elapsedSinceRender = Math.Clamp(
+                (now - _lastRenderTicks) / (double)Stopwatch.Frequency,
+                0,
+                0.1);
             _lastRenderTicks = now;
             double elapsed = (now - _pulseStartTicks) / (double)Stopwatch.Frequency;
             double colorElapsed = (now - _animationStartTicks) / (double)Stopwatch.Frequency;
-            UpdateOrbColor(colorElapsed);
+            double targetAudioLevel = AudioLevel;
+            double smoothingTime = targetAudioLevel > _smoothedAudioLevel ? 0.055 : 0.18;
+            double smoothing = 1 - Math.Exp(-elapsedSinceRender / smoothingTime);
+            _smoothedAudioLevel += (targetAudioLevel - _smoothedAudioLevel) * smoothing;
+            double liveLevel = _smoothedAudioLevel;
+            UpdateOrbColor(colorElapsed, liveLevel);
             double connectPulse = elapsed is >= 0 and < 0.55
                 ? Math.Sin(Math.PI * elapsed / 0.55) * 0.16
                 : 0;
             double idleBreath = (Math.Sin(now / (double)Stopwatch.Frequency * (2 * Math.PI / 4.2)) + 1) * 0.5;
-            double liveLevel = AudioLevel;
             double scale = 1 + connectPulse + liveLevel * 0.2 + (liveLevel < 0.015 ? idleBreath * 0.03 : 0);
             double transitionProgress = Math.Clamp(
                 (now - _focusTransitionStartTicks) / (double)Stopwatch.Frequency / 0.8,
@@ -257,37 +261,27 @@ namespace SennheiserTray
                 Canvas.SetLeft(glow, center + Math.Cos(angle) * radius - glowSize / 2);
                 Canvas.SetTop(glow, center + Math.Sin(angle) * radius - glowSize / 2);
                 RainbowWashCanvas.Children.Add(glow);
-                _rainbowGlows.Add(gradient);
             }
         }
 
-        private void UpdateOrbColor(double elapsedSeconds)
+        private void UpdateOrbColor(double elapsedSeconds, double liveLevel)
         {
             System.Windows.Media.Color color = GetSpectrumColor(elapsedSeconds);
             System.Windows.Media.Color secondaryColor = GetSpectrumColor(elapsedSeconds + 1.6);
             _orbAccentBrush.Color = color;
+            RainbowWashRotation.Angle = elapsedSeconds * 18 % 360;
 
             if (OrbGlow.Fill is not RadialGradientBrush gradient || gradient.GradientStops.Count < 3)
             {
                 return;
             }
 
-            byte audioAlpha = (byte)Math.Round(AudioLevel * 0x38);
+            byte audioAlpha = (byte)Math.Round(liveLevel * 0x38);
             gradient.GradientStops[0].Color = System.Windows.Media.Color.FromArgb(
                 (byte)(0x78 + audioAlpha), color.R, color.G, color.B);
             gradient.GradientStops[1].Color = System.Windows.Media.Color.FromArgb(
                 (byte)(0x38 + audioAlpha / 2), secondaryColor.R, secondaryColor.G, secondaryColor.B);
             gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(0x00, color.R, color.G, color.B);
-
-            double hueOffset = elapsedSeconds * 0.09;
-            for (int index = 0; index < _rainbowGlows.Count; index++)
-            {
-                double hue = (index / (double)_rainbowGlows.Count + hueOffset) % 1;
-                GradientStopCollection stops = _rainbowGlows[index].GradientStops;
-                stops[0].Color = ColorFromHue(hue, 0x58);
-                stops[1].Color = ColorFromHue(hue, 0x24);
-                stops[2].Color = ColorFromHue(hue, 0);
-            }
         }
 
         private static System.Windows.Media.Color ColorFromHue(double hue, byte alpha)
