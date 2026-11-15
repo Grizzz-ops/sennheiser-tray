@@ -33,11 +33,14 @@ namespace SennheiserTray
             }
             finally
             {
-                _autoConnectTimer.Start();
+                if (IsAutoConnectEnabled)
+                {
+                    _autoConnectTimer.Start();
+                }
             }
         }
 
-        private async Task LoadAvailableDevicesAsync()
+        private async Task<bool> LoadAvailableDevicesAsync()
         {
             try
             {
@@ -74,12 +77,15 @@ namespace SennheiserTray
                 {
                     StatusText = "Choose a headset to connect";
                 }
+
+                return devices.Count > 0;
             }
             catch (Exception ex)
             {
                 AppLogger.LogException("Could not enumerate Sennheiser devices", ex);
                 StatusText = "Device search failed";
                 LastCommand = $"DEVICE SEARCH ERROR -> {ex.Message}";
+                return false;
             }
         }
 
@@ -455,7 +461,18 @@ namespace SennheiserTray
 
         private async void AutoConnectTimer_Tick(object? sender, EventArgs e)
         {
-            await ScanAndConnectAsync();
+            _autoConnectTimer.Stop();
+            try
+            {
+                await ScanAndConnectAsync();
+            }
+            finally
+            {
+                if (!_isDisposed && IsAutoConnectEnabled)
+                {
+                    _autoConnectTimer.Start();
+                }
+            }
         }
 
         private async Task ScanAndConnectAsync()
@@ -472,8 +489,11 @@ namespace SennheiserTray
             _isAutoConnectScanInProgress = true;
             try
             {
-                await LoadAvailableDevicesAsync();
-                if (!string.IsNullOrWhiteSpace(SelectedDeviceId)
+                bool compatibleDeviceFound = await LoadAvailableDevicesAsync();
+                _autoConnectPollingPolicy.RecordScan(compatibleDeviceFound);
+                _autoConnectTimer.Interval = _autoConnectPollingPolicy.Interval;
+                if (compatibleDeviceFound
+                    && !string.IsNullOrWhiteSpace(SelectedDeviceId)
                     && !await TryConnectAsync(isAutomatic: true))
                 {
                     StartAutoReconnect();

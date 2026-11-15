@@ -5,10 +5,8 @@ namespace SennheiserTray
 {
     public sealed class SettingsStore
     {
-        private static readonly string SettingsDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SennheiserTray");
-        private static readonly string SettingsPath = Path.Combine(SettingsDirectory, "settings.json");
+        private readonly string _settingsDirectory;
+        private readonly string _settingsPath;
         private readonly object _gate = new();
 
         public bool GamingLatencyHintDismissed { get; private set; }
@@ -16,21 +14,34 @@ namespace SennheiserTray
         public bool AutoConnectEnabled { get; private set; } = true;
         public string MuteHotkeyKey { get; private set; } = "M";
 
+        public SettingsStore()
+            : this(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SennheiserTray",
+                "settings.json"))
+        {
+        }
+
+        public SettingsStore(string settingsPath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(settingsPath);
+            _settingsPath = Path.GetFullPath(settingsPath);
+            _settingsDirectory = Path.GetDirectoryName(_settingsPath)
+                ?? throw new ArgumentException("The settings path must include a directory.", nameof(settingsPath));
+        }
+
         public void Load()
         {
             lock (_gate)
             {
-                if (!File.Exists(SettingsPath))
+                if (!File.Exists(_settingsPath))
                 {
-                    GamingLatencyHintDismissed = false;
-                    IsDarkTheme = false;
-                    AutoConnectEnabled = true;
-                    MuteHotkeyKey = "M";
+                    ApplyDefaults();
                     return;
                 }
 
                 SettingsData? data = JsonSerializer.Deserialize<SettingsData>(
-                    File.ReadAllText(SettingsPath));
+                    File.ReadAllText(_settingsPath));
                 GamingLatencyHintDismissed = data?.GamingLatencyHintDismissed ?? false;
                 IsDarkTheme = data?.IsDarkTheme ?? false;
                 AutoConnectEnabled = data?.AutoConnectEnabled ?? true;
@@ -40,11 +51,21 @@ namespace SennheiserTray
             }
         }
 
+        private void ApplyDefaults()
+        {
+            GamingLatencyHintDismissed = false;
+            IsDarkTheme = false;
+            AutoConnectEnabled = true;
+            MuteHotkeyKey = "M";
+        }
+
         public void DismissGamingLatencyHint()
         {
             lock (_gate)
             {
                 SaveSettings(
+                    _settingsDirectory,
+                    _settingsPath,
                     gamingLatencyHintDismissed: true,
                     isDarkTheme: IsDarkTheme,
                     autoConnectEnabled: AutoConnectEnabled,
@@ -58,6 +79,8 @@ namespace SennheiserTray
             lock (_gate)
             {
                 SaveSettings(
+                    _settingsDirectory,
+                    _settingsPath,
                     GamingLatencyHintDismissed,
                     isDarkTheme,
                     AutoConnectEnabled,
@@ -71,6 +94,8 @@ namespace SennheiserTray
             lock (_gate)
             {
                 SaveSettings(
+                    _settingsDirectory,
+                    _settingsPath,
                     GamingLatencyHintDismissed,
                     IsDarkTheme,
                     autoConnectEnabled,
@@ -90,6 +115,8 @@ namespace SennheiserTray
             lock (_gate)
             {
                 SaveSettings(
+                    _settingsDirectory,
+                    _settingsPath,
                     GamingLatencyHintDismissed,
                     IsDarkTheme,
                     AutoConnectEnabled,
@@ -99,13 +126,15 @@ namespace SennheiserTray
         }
 
         private static void SaveSettings(
+            string settingsDirectory,
+            string settingsPath,
             bool gamingLatencyHintDismissed,
             bool isDarkTheme,
             bool autoConnectEnabled,
             string muteHotkeyKey)
         {
-            Directory.CreateDirectory(SettingsDirectory);
-            string temporaryPath = SettingsPath + ".tmp";
+            Directory.CreateDirectory(settingsDirectory);
+            string temporaryPath = settingsPath + ".tmp";
             File.WriteAllText(
                 temporaryPath,
                 JsonSerializer.Serialize(new SettingsData(
@@ -113,7 +142,7 @@ namespace SennheiserTray
                     isDarkTheme,
                     autoConnectEnabled,
                     muteHotkeyKey)));
-            File.Move(temporaryPath, SettingsPath, overwrite: true);
+            File.Move(temporaryPath, settingsPath, overwrite: true);
         }
 
         private sealed record SettingsData(

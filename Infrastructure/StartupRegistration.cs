@@ -4,30 +4,53 @@ using Microsoft.Win32;
 
 namespace SennheiserTray
 {
-    public static class StartupRegistration
+    public interface IStartupCommandStore
     {
-        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string ValueName = "SennheiserTray";
+        string? Read();
+        void Write(string command);
+        void Delete();
+    }
 
-        public static bool IsEnabled()
+    public sealed class StartupRegistration
+    {
+        private readonly IStartupCommandStore _commandStore;
+        private readonly Func<string?> _processPathProvider;
+        private readonly Func<string?> _assemblyPathProvider;
+
+        public StartupRegistration()
+            : this(
+                new WindowsStartupCommandStore(),
+                () => Environment.ProcessPath,
+                () => Assembly.GetEntryAssembly()?.Location)
         {
-            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath);
-            return key?.GetValue(ValueName) is string command
-                && !string.IsNullOrWhiteSpace(command);
         }
 
-        public static void SetEnabled(bool enabled)
+        public StartupRegistration(
+            IStartupCommandStore commandStore,
+            Func<string?> processPathProvider,
+            Func<string?> assemblyPathProvider)
+        {
+            _commandStore = commandStore ?? throw new ArgumentNullException(nameof(commandStore));
+            _processPathProvider = processPathProvider
+                ?? throw new ArgumentNullException(nameof(processPathProvider));
+            _assemblyPathProvider = assemblyPathProvider
+                ?? throw new ArgumentNullException(nameof(assemblyPathProvider));
+        }
+
+        public bool IsEnabled()
+        {
+            return !string.IsNullOrWhiteSpace(_commandStore.Read());
+        }
+
+        public void SetEnabled(bool enabled)
         {
             if (!enabled)
             {
-                using RegistryKey? existingKey = Registry.CurrentUser.OpenSubKey(
-                    RunKeyPath,
-                    writable: true);
-                existingKey?.DeleteValue(ValueName, throwOnMissingValue: false);
+                _commandStore.Delete();
                 return;
             }
 
-            string processPath = Environment.ProcessPath
+            string processPath = _processPathProvider()
                 ?? throw new InvalidOperationException("The application executable path is unavailable.");
             string startupCommand = $"\"{processPath}\"";
             if (string.Equals(
@@ -35,14 +58,37 @@ namespace SennheiserTray
                 "dotnet",
                 StringComparison.OrdinalIgnoreCase))
             {
-                string assemblyPath = Assembly.GetEntryAssembly()?.Location
+                string assemblyPath = _assemblyPathProvider()
                     ?? throw new InvalidOperationException("The application assembly path is unavailable.");
                 startupCommand = $"\"{processPath}\" \"{assemblyPath}\"";
             }
 
+            _commandStore.Write(startupCommand);
+        }
+    }
+
+    public sealed class WindowsStartupCommandStore : IStartupCommandStore
+    {
+        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string ValueName = "SennheiserTray";
+
+        public string? Read()
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath);
+            return key?.GetValue(ValueName) as string;
+        }
+
+        public void Write(string command)
+        {
             using RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true)
                 ?? throw new InvalidOperationException("Could not open the Windows startup registry key.");
-            key.SetValue(ValueName, startupCommand, RegistryValueKind.String);
+            key.SetValue(ValueName, command, RegistryValueKind.String);
+        }
+
+        public void Delete()
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            key?.DeleteValue(ValueName, throwOnMissingValue: false);
         }
     }
 }

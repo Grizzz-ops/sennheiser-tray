@@ -10,6 +10,10 @@ The interface uses a warm, neutral palette with a softly blended, continuously s
 
 ![Sennheiser Tray home screen showing the audio orb and headphone controls](docs/images/home-screen.png)
 
+### Tune
+
+![Sennheiser Tray Tune screen showing the equalizer graph and band controls](docs/images/tune-screen.png)
+
 ### Lab
 
 ![Sennheiser Tray Lab screen showing battery information and settings](docs/images/lab-screen.png)
@@ -63,7 +67,7 @@ dotnet test .\SennheiserTray.Tests\SennheiserTray.Tests.csproj
 3. In **Lab → Settings**, enable **Connect automatically when headset is available** and, if desired, **Launch with Windows**. The app remembers your selected headset and reconnects when it becomes available.
 4. Choose a sound mode, then use the ANC control, **Tune**, or **Lab** to adjust available settings.
 
-Use **Escape** to close the current drawer. The global mute shortcut can be selected in Lab settings; registration conflicts are shown there. Use the system-tray icon's right-click menu for quick controls, restart, or exit. Launching the app again brings the existing instance forward.
+Use **Ctrl+T** to open Tune and **Escape** to close the current drawer. The global mute shortcut can be selected in Lab settings; registration conflicts are shown there. Use the system-tray icon's right-click menu for quick controls, restart, or exit. Launching the app again brings the existing instance forward.
 
 ## ACCENTUM Plus testing
 
@@ -86,7 +90,7 @@ Replace each “Not recorded” entry with the observed result and any relevant 
 
 - `Controls/` — WPF controls and their XAML/code-behind files.
 - `Views/` — the main application window.
-- `ViewModels/` — presentation state and UI commands.
+- `ViewModels/` — presentation state and UI commands, with audio EQ learning delegated to a testable service.
 - `Services/` — Bluetooth, audio analysis, and Windows integration.
 - `Models/` — device, sound-mode, and protocol result models.
 - `Core/` — mode, protocol, and interaction rules.

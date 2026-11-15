@@ -5,7 +5,7 @@
         Title="Sennheiser Control"
         Icon="pack://application:,,,/SennheiserTray;component/Assets/SennheiserTray.ico"
         Width="360" Height="540" MinWidth="320" MinHeight="460"
-        WindowStyle="None" ResizeMode="CanResize"
+        WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True"
         FontFamily="Segoe UI Variable, Segoe UI">
@@ -14,16 +14,20 @@
     </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding CloseDrawerCommand}"/>
-        <KeyBinding Key="K" Modifiers="Control" Command="{Binding OpenTuneCommand}"/>
+        <KeyBinding Key="T" Modifiers="Control" Command="{Binding OpenTuneCommand}"/>
     </Window.InputBindings>
 
-    <Border Margin="8" Background="{DynamicResource AppBackgroundBrush}"
-            BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
-            CornerRadius="16" ClipToBounds="True">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.28"/>
-        </Border.Effect>
-        <Grid>
+    <Grid Margin="8">
+        <Border Background="{DynamicResource AppBackgroundBrush}"
+                CornerRadius="16" IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.28"/>
+            </Border.Effect>
+        </Border>
+        <Border Background="{DynamicResource AppBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1"
+                CornerRadius="16" ClipToBounds="True">
+          <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="38"/>
                 <RowDefinition Height="*"/>
@@ -74,7 +78,42 @@
                         <RowDefinition Height="40"/>
                     </Grid.RowDefinitions>
 
-                    <local:ModeChips Grid.Row="0" VerticalAlignment="Center"/>
+                    <ItemsControl Grid.Row="0" ItemsSource="{Binding ModeChipItems}"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="5" Rows="1"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <ToggleButton Style="{StaticResource ModeChipStyle}"
+                                                  IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                  Command="{Binding DataContext.SelectModeCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                  CommandParameter="{Binding Id}"
+                                                  AutomationProperties.Name="{Binding Name}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Icon}"
+                                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="16" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="11"
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <Button Grid.ZIndex="1" Width="18" Height="18" Padding="0"
+                                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                                            Margin="0,0,1,1" Content="&#xE840;"
+                                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                            Style="{StaticResource ModePinButtonStyle}"
+                                            Visibility="{Binding IsSelected, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                            ToolTip="{Binding DataContext.ModePinText, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                            Command="{Binding DataContext.ToggleModePinCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                            AutomationProperties.Name="{Binding DataContext.ModePinActionText, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <local:OrbControl Grid.Row="1" Width="310" Height="310"
                                       HorizontalAlignment="Center"
@@ -336,6 +375,7 @@
                     </ScrollViewer>
                 </Border>
             </Grid>
-        </Grid>
-    </Border>
+          </Grid>
+        </Border>
+    </Grid>
 </Window>

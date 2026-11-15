@@ -17,7 +17,7 @@ namespace SennheiserTray
         private static readonly Guid SennheiserUuid = new("A2129FF3-081B-4C45-8AFE-469D9C4842EC");
         private readonly SemaphoreSlim _writeSemaphore = new(1, 1);
         private readonly SemaphoreSlim _connectionSemaphore = new(1, 1);
-        private readonly ConcurrentDictionary<ushort, SemaphoreSlim> _requestSemaphores = new();
+        private readonly KeyedAsyncLock<ushort> _requestLocks = new();
         private readonly ConcurrentDictionary<ushort, TaskCompletionSource<GaiaResult>> _pendingRequests = new();
         private StreamSocket? _socket;
         private DataWriter? _writer;
@@ -163,49 +163,39 @@ namespace SennheiserTray
                 return new GaiaResult(false, "REQUEST DISABLED: reply command is unverified.", null);
             }
 
-            SemaphoreSlim requestSemaphore = _requestSemaphores.GetOrAdd(
-                expectedReplyId,
-                static _ => new SemaphoreSlim(1, 1));
-            await requestSemaphore.WaitAsync();
+            using IDisposable requestLock = await _requestLocks.AcquireAsync(expectedReplyId);
+            var completion = new TaskCompletionSource<GaiaResult>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_pendingRequests.TryAdd(expectedReplyId, completion))
+            {
+                throw new InvalidOperationException(
+                    $"A request for reply 0x{expectedReplyId:X4} is already registered.");
+            }
+
             try
             {
-                var completion = new TaskCompletionSource<GaiaResult>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
-                if (!_pendingRequests.TryAdd(expectedReplyId, completion))
+                GaiaResult sent = await SendPacketAsync(commandId, payload);
+                if (!sent.Success)
                 {
-                    throw new InvalidOperationException(
-                        $"A request for reply 0x{expectedReplyId:X4} is already registered.");
+                    return sent;
                 }
 
                 try
                 {
-                    GaiaResult sent = await SendPacketAsync(commandId, payload);
-                    if (!sent.Success)
-                    {
-                        return sent;
-                    }
-
-                    try
-                    {
-                        GaiaResult reply = await completion.Task.WaitAsync(timeout);
-                        return reply with { Log = $"REQUEST 0x{commandId:X4} -> {sent.Log} | {reply.Log}" };
-                    }
-                    catch (TimeoutException)
-                    {
-                        return new GaiaResult(
-                            false,
-                            $"REQUEST TIMEOUT: sent 0x{commandId:X4}, expected reply 0x{expectedReplyId:X4}.",
-                            null);
-                    }
+                    GaiaResult reply = await completion.Task.WaitAsync(timeout);
+                    return reply with { Log = $"REQUEST 0x{commandId:X4} -> {sent.Log} | {reply.Log}" };
                 }
-                finally
+                catch (TimeoutException)
                 {
-                    _pendingRequests.TryRemove(expectedReplyId, out _);
+                    return new GaiaResult(
+                        false,
+                        $"REQUEST TIMEOUT: sent 0x{commandId:X4}, expected reply 0x{expectedReplyId:X4}.",
+                        null);
                 }
             }
             finally
             {
-                requestSemaphore.Release();
+                _pendingRequests.TryRemove(expectedReplyId, out _);
             }
         }
 

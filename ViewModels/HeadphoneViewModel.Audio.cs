@@ -95,9 +95,7 @@ namespace SennheiserTray
             SyncCurrentModeState();
             if (IsAdaptiveEqEnabled && !_applyingAdaptiveEq)
             {
-                _manualEqValues = EqValues.ToArray();
-                _adaptiveEqSamples.Clear();
-                _adaptiveEqProfileLocked = false;
+                _adaptiveEqLearner.UpdateBaseline(EqValues.ToArray());
                 AdaptiveEqStatus = "Manual curve saved · learning a new steady profile…";
             }
 
@@ -402,12 +400,9 @@ namespace SennheiserTray
                 }
 
                 double[] previousEq = EqValues.ToArray();
-                _manualEqValues = previousEq;
+                _adaptiveEqLearner.Start(previousEq);
                 _latestPlaybackSpectrum = null;
                 _hasNewPlaybackSpectrum = false;
-                _adaptiveEqSamples.Clear();
-                _adaptiveEqProfileLocked = false;
-                _silentPlaybackTicks = 0;
                 IsAdaptiveEqEnabled = true;
                 AdaptiveEqStatus = "Listening to Windows playback locally…";
                 _adaptiveEqTimer.Start();
@@ -415,6 +410,7 @@ namespace SennheiserTray
             catch (Exception ex)
             {
                 _audioLevelService.Mode = AudioAnalysisMode.Visualizer;
+                _adaptiveEqLearner.Stop();
                 AppLogger.LogException("Could not start adaptive EQ capture", ex);
                 AdaptiveEqStatus = $"Could not start playback analysis: {ex.Message}";
             }
@@ -428,73 +424,37 @@ namespace SennheiserTray
             }
 
             _hasNewPlaybackSpectrum = false;
-            double[] spectrum = _latestPlaybackSpectrum;
-            if (spectrum.All(level => level < -72))
-            {
-                _silentPlaybackTicks++;
-                if (_silentPlaybackTicks >= 3)
-                {
-                    _adaptiveEqSamples.Clear();
-                    _adaptiveEqProfileLocked = false;
-                    AdaptiveEqStatus = "Playback paused · ready to learn the next track";
-                }
-
-                return;
-            }
-
-            _silentPlaybackTicks = 0;
-            if (_adaptiveEqProfileLocked)
+            AdaptiveEqFrameResult result = _adaptiveEqLearner.ProcessSpectrum(_latestPlaybackSpectrum);
+            if (result.State is AdaptiveEqFrameState.Silent or AdaptiveEqFrameState.Locked)
             {
                 return;
             }
 
-            _adaptiveEqSamples.Enqueue((double[])spectrum.Clone());
-            const int stableWindowSamples = 15;
-            while (_adaptiveEqSamples.Count > stableWindowSamples)
+            if (result.State == AdaptiveEqFrameState.Paused)
             {
-                _adaptiveEqSamples.Dequeue();
-            }
-
-            if (_adaptiveEqSamples.Count < stableWindowSamples)
-            {
-                AdaptiveEqStatus = $"Learning a steady profile… {_adaptiveEqSamples.Count}/{stableWindowSamples}";
+                AdaptiveEqStatus = "Playback paused · ready to learn the next track";
                 return;
             }
 
-            double[] stableSpectrum = GetMedianPlaybackSpectrum(_adaptiveEqSamples);
-            double averageLevel = stableSpectrum.Average();
+            if (result.State == AdaptiveEqFrameState.Learning)
+            {
+                AdaptiveEqStatus = $"Learning a steady profile… {result.SampleCount}/15";
+                return;
+            }
+
+            double[] profile = result.Profile
+                ?? throw new InvalidOperationException("The adaptive EQ learner returned no profile.");
             _applyingAdaptiveEq = true;
             try
             {
-                for (int band = 0; band < EqValues.Count; band++)
-                {
-                    double correctionDb = Math.Clamp((averageLevel - stableSpectrum[band]) * 0.08, -2, 2);
-                    double baseline = _manualEqValues?[band] ?? 0;
-                    double targetTenthsDb = Math.Round((baseline + correctionDb * 10) / 5) * 5;
-                    EqValues[band] = Math.Clamp(targetTenthsDb, -60, 60);
-                }
+                ApplyEqValues(profile);
             }
             finally
             {
                 _applyingAdaptiveEq = false;
             }
 
-            _adaptiveEqProfileLocked = true;
             AdaptiveEqStatus = "Profile locked · pauses trigger relearning";
-        }
-
-        private static double[] GetMedianPlaybackSpectrum(IEnumerable<double[]> samples)
-        {
-            double[][] frames = samples.ToArray();
-            int bandCount = frames[0].Length;
-            var median = new double[bandCount];
-            for (int band = 0; band < bandCount; band++)
-            {
-                double[] levels = frames.Select(frame => frame[band]).OrderBy(level => level).ToArray();
-                median[band] = levels[levels.Length / 2];
-            }
-
-            return median;
         }
 
         private void StopAdaptiveEq(bool restoreManualEq)
@@ -507,27 +467,22 @@ namespace SennheiserTray
             UpdateAudioCapture();
             _latestPlaybackSpectrum = null;
             _hasNewPlaybackSpectrum = false;
-            _adaptiveEqSamples.Clear();
-            _adaptiveEqProfileLocked = false;
+            double[]? manualProfile = _adaptiveEqLearner.ManualProfile;
+            _adaptiveEqLearner.Stop();
             AdaptiveEqStatus = "Learns a steady profile from playback · local only";
 
-            if (wasEnabled && restoreManualEq && _manualEqValues != null)
+            if (wasEnabled && restoreManualEq && manualProfile != null)
             {
                 _applyingAdaptiveEq = true;
                 try
                 {
-                    for (int band = 0; band < EqValues.Count; band++)
-                    {
-                        EqValues[band] = _manualEqValues[band];
-                    }
+                    ApplyEqValues(manualProfile);
                 }
                 finally
                 {
                     _applyingAdaptiveEq = false;
                 }
             }
-
-            _manualEqValues = null;
         }
     }
 }

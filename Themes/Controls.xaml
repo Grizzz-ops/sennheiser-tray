@@ -69,7 +69,7 @@
         <Setter Property="FontSize" Value="10"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Style.Triggers>
-            <DataTrigger Binding="{Binding DataContext.IsModePinned, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" Value="True">
+            <DataTrigger Binding="{Binding DataContext.IsModePinned, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
             </DataTrigger>
             <Trigger Property="IsMouseOver" Value="True">
@@ -92,14 +92,14 @@
                                IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton Command="{x:Static Slider.DecreaseLarge}"
-                                              Style="{StaticResource SliderDecreaseButtonStyle}"/>
+                                              Style="{DynamicResource SliderDecreaseButtonStyle}"/>
                             </Track.DecreaseRepeatButton>
                             <Track.Thumb>
-                                <Thumb Style="{StaticResource SliderThumbStyle}"/>
+                                <Thumb Style="{DynamicResource SliderThumbStyle}"/>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Command="{x:Static Slider.IncreaseLarge}"
-                                              Style="{StaticResource SliderIncreaseButtonStyle}"/>
+                                              Style="{DynamicResource SliderIncreaseButtonStyle}"/>
                             </Track.IncreaseRepeatButton>
                         </Track>
                     </Grid>

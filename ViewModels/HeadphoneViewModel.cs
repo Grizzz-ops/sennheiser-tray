@@ -20,6 +20,8 @@ namespace SennheiserTray
         private readonly CaptureEndpointMuteService _captureEndpointMuteService = new();
         private readonly PlaybackVolumeService _playbackVolumeService = new();
         private readonly SettingsStore _settingsStore = new();
+        private readonly StartupRegistration _startupRegistration = new();
+        private readonly AutoConnectPollingPolicy _autoConnectPollingPolicy = new();
         private readonly Dispatcher _dispatcher;
         private readonly DispatcherTimer _debounceTimer;
         private readonly DispatcherTimer _ancLevelTimer;
@@ -33,9 +35,8 @@ namespace SennheiserTray
         private readonly SemaphoreSlim _connectSemaphore = new(1, 1);
         private readonly SemaphoreSlim _headsetOperationSemaphore = new(1, 1);
         private readonly CancellationTokenSource _lifetime = new();
-        private readonly Queue<double[]> _adaptiveEqSamples = new();
+        private readonly AdaptiveEqProfileLearner _adaptiveEqLearner = new();
         private double[]? _latestPlaybackSpectrum;
-        private double[]? _manualEqValues;
         private double[]? _bassImpactPreviousEq;
         private Task? _reconnectTask;
         private string _pendingAction = "";
@@ -69,7 +70,6 @@ namespace SennheiserTray
         private bool _adaptiveEqEnabled;
         private bool _hasNewPlaybackSpectrum;
         private bool _applyingAdaptiveEq;
-        private bool _adaptiveEqProfileLocked;
         private bool _isApplyingAncMode;
         private bool _isSendingAncLevel;
         private bool _ancLevelChangedWhileSending;
@@ -88,7 +88,6 @@ namespace SennheiserTray
         private int _playbackVolume = 50;
         private double _lastCustomAncLevel = 50;
         private string _selectedMode = "Music";
-        private int _silentPlaybackTicks;
         private int _modeApplyGeneration;
         private bool _isDisposed;
 
@@ -245,7 +244,7 @@ namespace SennheiserTray
             _playbackVolumeTimer.Tick += PlaybackVolumeTimer_Tick;
             _autoConnectTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
             {
-                Interval = TimeSpan.FromSeconds(20)
+                Interval = _autoConnectPollingPolicy.Interval
             };
             _autoConnectTimer.Tick += AutoConnectTimer_Tick;
 
@@ -266,7 +265,7 @@ namespace SennheiserTray
 
             try
             {
-                _isLaunchOnStartup = StartupRegistration.IsEnabled();
+                _isLaunchOnStartup = _startupRegistration.IsEnabled();
             }
             catch (Exception ex)
             {
@@ -510,11 +509,17 @@ namespace SennheiserTray
                         : "HEADSET -> Automatic connection disabled";
                     if (value)
                     {
+                        _autoConnectTimer.Interval = _autoConnectPollingPolicy.Interval;
+                        _autoConnectTimer.Start();
                         _ = ScanAndConnectAsync();
                     }
-                    else if (!IsConnected && StatusText == "Reconnecting...")
+                    else
                     {
-                        StatusText = "Disconnected";
+                        _autoConnectTimer.Stop();
+                        if (!IsConnected && StatusText == "Reconnecting...")
+                        {
+                            StatusText = "Disconnected";
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -538,7 +543,7 @@ namespace SennheiserTray
 
                 try
                 {
-                    StartupRegistration.SetEnabled(value);
+                    _startupRegistration.SetEnabled(value);
                     if (SetProperty(ref _isLaunchOnStartup, value))
                     {
                         LastCommand = value

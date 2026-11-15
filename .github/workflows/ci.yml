@@ -16,6 +16,10 @@ jobs:
           dotnet-version: 8.0.x
       - name: Restore dependencies
         run: dotnet restore .\SennheiserTray.Tests\SennheiserTray.Tests.csproj --locked-mode
+      - name: Audit application dependencies
+        run: dotnet list .\SennheiserTray.csproj package --vulnerable --include-transitive
+      - name: Audit test dependencies
+        run: dotnet list .\SennheiserTray.Tests\SennheiserTray.Tests.csproj package --vulnerable --include-transitive
       - name: Build application
         run: dotnet build .\SennheiserTray.csproj --configuration Release --no-restore
       - name: Run unit tests

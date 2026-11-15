@@ -75,6 +75,12 @@ namespace SennheiserTray
                 entry += Environment.NewLine + string.Join(Environment.NewLine, frames.Take(4));
             }
 
+            Exception? cause = exception.InnerException;
+            for (int depth = 0; cause != null && depth < 3; depth++, cause = cause.InnerException)
+            {
+                entry += Environment.NewLine + $"Caused by {cause.GetType().Name}: {cause.Message}";
+            }
+
             if (entry.Length > MaximumEntryCharacters)
             {
                 entry = entry[..MaximumEntryCharacters] + " [entry truncated]";
