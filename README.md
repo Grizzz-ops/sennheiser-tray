@@ -10,6 +10,8 @@ A Windows desktop app for controlling compatible Sennheiser headphones over Blue
 - Select Music, Movie, Gaming, Calls, or Focus sound modes.
 - Adjust ANC and Adaptive ANC when supported by the headset.
 - View battery level when the headset reports it over GAIA; unsupported or unavailable readings are shown as `Battery --`.
+- See estimated time to empty or full after enough recent readings show a clear battery trend. These estimates are approximate and the charging state is inferred from the trend.
+- Adjust the current Windows default playback device volume from the Lab settings.
 - Tune five equalizer bands and toggle Bass Boost and Bass Impact.
 - Enable Adaptive EQ, which learns a steady profile from Windows playback locally. Playback analysis does not capture microphone audio or send data over the network.
 - Use Focus Cycle in Focus mode.
@@ -73,6 +75,8 @@ Replace each “Not recorded” entry with the observed result and any relevant 
 
 - **Headset not listed:** Check that it is paired and powered on. The headset must expose the GAIA Bluetooth control service.
 - **Battery unavailable:** The connected headset or firmware may not provide a battery response over GAIA.
+- **Battery estimates:** Estimates need several readings over at least 10 minutes and may vary with playback volume, ANC, and other usage. Battery health and charging control are not exposed by the battery data currently supported by the app.
+- **Volume control:** The Lab slider changes Windows’ default playback-device volume, not a GAIA headset-volume command.
 - **Connection or control errors:** Reconnect the headset and retry. Some functions vary by model or firmware.
 - **Application logs:** Logs are stored locally in `%LOCALAPPDATA%\SennheiserTray\logs`; older logs are removed after 30 days.
 

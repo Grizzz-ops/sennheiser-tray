@@ -39,6 +39,7 @@
                 <TextBlock Grid.Column="2" Text="{Binding BatteryText}"
                            Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                            VerticalAlignment="Center" Margin="8,0"
+                           ToolTip="{Binding BatteryToolTip}"
                            Visibility="{Binding IsConnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 <Button Grid.Column="3" Content="Connect" Command="{Binding ConnectCommand}"
                         Style="{StaticResource ActionButtonStyle}" Padding="8,4"
@@ -270,6 +271,21 @@
                                        TextWrapping="Wrap" Margin="0,0,0,16"/>
                             <TextBlock Text="SETTINGS" Foreground="{DynamicResource TextSecondaryBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Windows output volume" Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="12" Margin="0,0,0,2"/>
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock Text="{Binding PlaybackVolume, StringFormat={}{0}%}"
+                                           Foreground="{DynamicResource AccentBrush}" Width="38"
+                                           DockPanel.Dock="Right" TextAlignment="Right"
+                                           VerticalAlignment="Center" FontSize="10"/>
+                                <Slider Minimum="0" Maximum="100" Value="{Binding PlaybackVolume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        IsEnabled="{Binding IsPlaybackVolumeAvailable}"
+                                        ToolTip="{Binding PlaybackVolumeStatus}"
+                                        Style="{StaticResource GlowSliderStyle}"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding PlaybackVolumeStatus}"
+                                       Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                       TextWrapping="Wrap" Margin="0,0,0,12"/>
                             <TextBlock Text="Headset" Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="12" Margin="0,0,0,5"/>
                             <ComboBox ItemsSource="{Binding Devices}" SelectedValue="{Binding SelectedDeviceId, Mode=TwoWay}"

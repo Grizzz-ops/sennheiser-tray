@@ -15,8 +15,10 @@ namespace SennheiserTray
     {
         private readonly SennheiserService _service;
         private readonly ModeManager _modeManager = new();
+        private readonly BatteryTrendEstimator _batteryTrendEstimator = new();
         private readonly AudioLevelService _audioLevelService = new();
         private readonly CaptureEndpointMuteService _captureEndpointMuteService = new();
+        private readonly PlaybackVolumeService _playbackVolumeService = new();
         private readonly SettingsStore _settingsStore = new();
         private readonly Dispatcher _dispatcher;
         private readonly DispatcherTimer _debounceTimer;
@@ -25,6 +27,8 @@ namespace SennheiserTray
         private readonly DispatcherTimer _modePinTimer;
         private readonly DispatcherTimer _microphoneStateTimer;
         private readonly DispatcherTimer _focusCycleTimer;
+        private readonly DispatcherTimer _batteryPollTimer;
+        private readonly DispatcherTimer _playbackVolumeTimer;
         private readonly SemaphoreSlim _connectSemaphore = new(1, 1);
         private readonly SemaphoreSlim _headsetOperationSemaphore = new(1, 1);
         private readonly CancellationTokenSource _lifetime = new();
@@ -69,7 +73,12 @@ namespace SennheiserTray
         private bool _isTuneOpen;
         private bool _isLabOpen;
         private bool _isUpdatingAutoToggle;
+        private bool _isBatteryPollInProgress;
+        private bool _isRefreshingPlaybackVolume;
+        private bool _isPlaybackVolumeAvailable;
+        private bool _hasLoggedPlaybackVolumeError;
         private int _modeBeforeAdaptive = AncModeRules.Custom;
+        private int _playbackVolume = 50;
         private double _lastCustomAncLevel = 50;
         private string _selectedMode = "Music";
         private int _silentPlaybackTicks;
@@ -174,6 +183,16 @@ namespace SennheiserTray
                 Interval = TimeSpan.FromSeconds(1)
             };
             _focusCycleTimer.Tick += FocusCycleTimer_Tick;
+            _batteryPollTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+            {
+                Interval = TimeSpan.FromMinutes(2)
+            };
+            _batteryPollTimer.Tick += BatteryPollTimer_Tick;
+            _playbackVolumeTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
+            {
+                Interval = TimeSpan.FromSeconds(5)
+            };
+            _playbackVolumeTimer.Tick += PlaybackVolumeTimer_Tick;
 
             try
             {
@@ -187,6 +206,8 @@ namespace SennheiserTray
             }
 
             RefreshMicrophoneMuteState();
+            RefreshPlaybackVolume();
+            _playbackVolumeTimer.Start();
 
             _service.ConnectionChanged += Service_ConnectionChanged;
             _service.NotificationReceived += Service_NotificationReceived;
@@ -274,8 +295,54 @@ namespace SennheiserTray
         }
 
         public string BatteryText => BatteryLevel is int level
-            ? $"Battery {level}%"
+            ? BatteryEstimateText is { Length: > 0 } estimate
+                ? $"Battery {level}% · {estimate}"
+                : $"Battery {level}%"
             : "Battery --";
+
+        public string BatteryToolTip =>
+            "Time and charging estimates are inferred from recent battery readings, not reported by the headset. Battery health and charging control are not available.";
+
+        private string BatteryEstimateText { get; set; } = "";
+
+        public int PlaybackVolume
+        {
+            get => _playbackVolume;
+            set
+            {
+                int volume = Math.Clamp(value, 0, 100);
+                if (!SetProperty(ref _playbackVolume, volume) || _isRefreshingPlaybackVolume)
+                {
+                    return;
+                }
+
+                try
+                {
+                    _playbackVolumeService.SetDefaultPlaybackVolume(volume);
+                    IsPlaybackVolumeAvailable = true;
+                }
+                catch (Exception ex)
+                {
+                    ReportPlaybackVolumeError("Could not set Windows playback volume", ex);
+                }
+            }
+        }
+
+        public string PlaybackVolumeStatus => IsPlaybackVolumeAvailable
+            ? "Controls the current Windows default output device."
+            : "Windows playback output is unavailable.";
+
+        public bool IsPlaybackVolumeAvailable
+        {
+            get => _isPlaybackVolumeAvailable;
+            private set
+            {
+                if (SetProperty(ref _isPlaybackVolumeAvailable, value))
+                {
+                    OnPropertyChanged(nameof(PlaybackVolumeStatus));
+                }
+            }
+        }
 
         public string ConnectButtonText => IsConnected ? "Reconnect" : "Connect";
         public bool IsDisconnected => !IsConnected;
@@ -295,7 +362,15 @@ namespace SennheiserTray
                 {
                     if (!value)
                     {
+                        _batteryPollTimer.Stop();
+                        _batteryTrendEstimator.Reset();
                         BatteryLevel = null;
+                        BatteryEstimateText = "";
+                        OnPropertyChanged(nameof(BatteryText));
+                    }
+                    else
+                    {
+                        _batteryPollTimer.Start();
                     }
 
                     OnPropertyChanged(nameof(StatusForeground));
@@ -1164,6 +1239,7 @@ namespace SennheiserTray
                     && TryParseBatteryLevel(payload, out int batteryLevel))
                 {
                     BatteryLevel = batteryLevel;
+                    UpdateBatteryEstimate(batteryLevel);
                     return;
                 }
 
@@ -1235,6 +1311,7 @@ namespace SennheiserTray
                 if (battery.Success && TryParseBatteryLevel(battery.Payload, out int batteryLevel))
                 {
                     BatteryLevel = batteryLevel;
+                    UpdateBatteryEstimate(batteryLevel);
                     stateLogs[0] = $"Battery {batteryLevel}% -> {battery.Log}";
                 }
                 else
@@ -1255,7 +1332,7 @@ namespace SennheiserTray
                     GaiaResult ancState = await _service.RequestAsync(
                         GaiaCommands.AncStateGet, Array.Empty<byte>(),
                         GaiaCommands.AncStateReply, TimeSpan.FromSeconds(2));
-                    stateLogs[0] = $"ANC state -> {ancState.Log}";
+                    stateLogs[1] = $"ANC state -> {ancState.Log}";
                 }
 
                 if (GaiaCommands.IsVerified(GaiaCommands.AncLevelGet)
@@ -1264,7 +1341,7 @@ namespace SennheiserTray
                     GaiaResult ancLevel = await _service.RequestAsync(
                         GaiaCommands.AncLevelGet, Array.Empty<byte>(),
                         GaiaCommands.AncLevelReply, TimeSpan.FromSeconds(2));
-                    stateLogs[1] = $"ANC level -> {ancLevel.Log}";
+                    stateLogs[2] = $"ANC level -> {ancLevel.Log}";
                 }
 
                 if (GaiaCommands.IsVerified(GaiaCommands.EqBandGet)
@@ -1273,7 +1350,7 @@ namespace SennheiserTray
                     GaiaResult eq = await _service.RequestAsync(
                         GaiaCommands.EqBandGet, Array.Empty<byte>(),
                         GaiaCommands.EqBandReply, TimeSpan.FromSeconds(2));
-                    stateLogs[2] = $"EQ -> {eq.Log}";
+                    stateLogs[3] = $"EQ -> {eq.Log}";
                 }
 
                 GaiaResult bassBoost = await _service.RequestAsync(
@@ -1293,6 +1370,105 @@ namespace SennheiserTray
                 LastCommand = $"STATE SYNC ERROR -> {ex.Message}";
             }
         }
+
+        private void UpdateBatteryEstimate(int batteryLevel)
+        {
+            _batteryTrendEstimator.AddSample(DateTimeOffset.UtcNow, batteryLevel);
+            string estimate = _batteryTrendEstimator.GetEstimate(batteryLevel) ?? "";
+            if (BatteryEstimateText == estimate)
+            {
+                return;
+            }
+
+            BatteryEstimateText = estimate;
+            OnPropertyChanged(nameof(BatteryText));
+        }
+
+        private async void BatteryPollTimer_Tick(object? sender, EventArgs e)
+        {
+            if (!IsConnected || _isDisposed || _isBatteryPollInProgress)
+            {
+                return;
+            }
+
+            _isBatteryPollInProgress = true;
+            await _headsetOperationSemaphore.WaitAsync();
+            try
+            {
+                if (!IsConnected || _isDisposed)
+                {
+                    return;
+                }
+
+                GaiaResult result = await _service.RequestAsync(
+                    GaiaCommands.BatteryGet,
+                    Array.Empty<byte>(),
+                    GaiaCommands.BatteryReply,
+                    TimeSpan.FromSeconds(2));
+                if (result.Success && TryParseBatteryLevel(result.Payload, out int batteryLevel))
+                {
+                    BatteryLevel = batteryLevel;
+                    UpdateBatteryEstimate(batteryLevel);
+                }
+                else if (!result.Success)
+                {
+                    LastCommand = $"BATTERY REFRESH -> {result.Log}";
+                }
+                else
+                {
+                    LastCommand =
+                        $"BATTERY REFRESH -> Invalid reply: {BitConverter.ToString(result.Payload ?? Array.Empty<byte>())}";
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogException("Battery refresh failed", ex);
+                LastCommand = $"BATTERY REFRESH ERROR -> {ex.Message}";
+            }
+            finally
+            {
+                _isBatteryPollInProgress = false;
+                _headsetOperationSemaphore.Release();
+            }
+        }
+
+        private void RefreshPlaybackVolume()
+        {
+            try
+            {
+                int volume = _playbackVolumeService.GetDefaultPlaybackVolume();
+                _hasLoggedPlaybackVolumeError = false;
+                IsPlaybackVolumeAvailable = true;
+                _isRefreshingPlaybackVolume = true;
+                try
+                {
+                    PlaybackVolume = volume;
+                }
+                finally
+                {
+                    _isRefreshingPlaybackVolume = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportPlaybackVolumeError("Could not read Windows playback volume", ex);
+            }
+        }
+
+        private void ReportPlaybackVolumeError(string context, Exception exception)
+        {
+            if (!_hasLoggedPlaybackVolumeError)
+            {
+                AppLogger.LogException(context, exception);
+                LastCommand = $"PLAYBACK VOLUME ERROR -> {exception.Message}";
+                _hasLoggedPlaybackVolumeError = true;
+            }
+
+            IsPlaybackVolumeAvailable = false;
+        }
+
+        private void PlaybackVolumeTimer_Tick(object? sender, EventArgs e) =>
+            RefreshPlaybackVolume();
 
         private void StartAutoReconnect()
         {
@@ -1866,9 +2042,13 @@ namespace SennheiserTray
             _modePinTimer.Stop();
             _microphoneStateTimer.Stop();
             _focusCycleTimer.Stop();
+            _batteryPollTimer.Stop();
+            _playbackVolumeTimer.Stop();
             _modePinTimer.Tick -= ModePinTimer_Tick;
             _microphoneStateTimer.Tick -= MicrophoneStateTimer_Tick;
             _focusCycleTimer.Tick -= FocusCycleTimer_Tick;
+            _batteryPollTimer.Tick -= BatteryPollTimer_Tick;
+            _playbackVolumeTimer.Tick -= PlaybackVolumeTimer_Tick;
             StopAdaptiveEq(restoreManualEq: false);
             _audioLevelService.AudioLevelAvailable -= AudioLevelService_AudioLevelAvailable;
             _audioLevelService.SpectrumAnalyzed -= AudioLevelService_SpectrumAnalyzed;
@@ -1877,6 +2057,7 @@ namespace SennheiserTray
             _service.NotificationReceived -= Service_NotificationReceived;
             _service.Dispose();
             _captureEndpointMuteService.Dispose();
+            _playbackVolumeService.Dispose();
             _lifetime.Dispose();
         }
     }
