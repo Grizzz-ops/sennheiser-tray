@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Resources;
 using WinForms = System.Windows.Forms;
 
 namespace SennheiserTray
@@ -22,6 +24,7 @@ namespace SennheiserTray
             new(StringComparer.Ordinal);
         private readonly Dictionary<int, WinForms.ToolStripMenuItem> _noiseControlItems = new();
         private WinForms.NotifyIcon? _trayIcon;
+        private System.Drawing.Icon? _trayIconImage;
         private HwndSource? _hotkeySource;
         private WinForms.ToolStripMenuItem? _volumeStatusItem;
         private WinForms.ToolStripMenuItem? _volumeDownItem;
@@ -71,6 +74,9 @@ namespace SennheiserTray
                     _trayIcon.Dispose();
                     _trayIcon = null;
                 }
+
+                _trayIconImage?.Dispose();
+                _trayIconImage = null;
             };
         }
 
@@ -110,9 +116,15 @@ namespace SennheiserTray
 
         private void InitializeTrayIcon()
         {
+            StreamResourceInfo iconResource = System.Windows.Application.GetResourceStream(
+                new Uri("pack://application:,,,/SennheiserTray;component/Assets/SennheiserTray.ico"))
+                ?? throw new FileNotFoundException("The application tray icon resource is missing.");
+            using Stream iconStream = iconResource.Stream;
+            using var resourceIcon = new System.Drawing.Icon(iconStream);
+            _trayIconImage = (System.Drawing.Icon)resourceIcon.Clone();
             _trayIcon = new WinForms.NotifyIcon
             {
-                Icon = System.Drawing.SystemIcons.Application,
+                Icon = _trayIconImage,
                 Text = "Sennheiser Control",
                 Visible = true
             };

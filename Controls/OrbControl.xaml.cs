@@ -52,6 +52,16 @@ namespace SennheiserTray
 
         private static readonly SolidColorBrush LiveCallBrush = CreateFrozenBrush(0xA7, 0x8B, 0xFA);
         private static readonly SolidColorBrush MutedCallBrush = CreateFrozenBrush(0xFF, 0x5D, 0x65);
+        private static readonly System.Windows.Media.Color[] SpectrumColors =
+        {
+            System.Windows.Media.Color.FromRgb(0x25, 0xC9, 0xD0),
+            System.Windows.Media.Color.FromRgb(0x8D, 0x6B, 0xF5),
+            System.Windows.Media.Color.FromRgb(0xF0, 0x5D, 0xB5),
+            System.Windows.Media.Color.FromRgb(0xFF, 0x86, 0x55),
+            System.Windows.Media.Color.FromRgb(0x75, 0xD6, 0x84),
+            System.Windows.Media.Color.FromRgb(0x42, 0x9D, 0xF5)
+        };
+        private bool _isRendering;
 
         public OrbControl()
         {
@@ -63,6 +73,7 @@ namespace SennheiserTray
             DialThumb.Fill = _orbAccentBrush;
             Loaded += OrbControl_Loaded;
             Unloaded += OrbControl_Unloaded;
+            IsVisibleChanged += OrbControl_IsVisibleChanged;
             DrawLevelArc();
             UpdateConnectionVisual();
         }
@@ -168,15 +179,43 @@ namespace SennheiserTray
 
         private void OrbControl_Loaded(object sender, RoutedEventArgs e)
         {
-            if (_animationsEnabled)
-            {
-                _lastRenderTicks = Stopwatch.GetTimestamp();
-                CompositionTarget.Rendering += CompositionTarget_Rendering;
-            }
+            UpdateRenderingSubscription();
         }
 
         private void OrbControl_Unloaded(object sender, RoutedEventArgs e) =>
+            StopRendering();
+
+        private void OrbControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) =>
+            UpdateRenderingSubscription();
+
+        private void UpdateRenderingSubscription()
+        {
+            if (_animationsEnabled && IsLoaded && IsVisible)
+            {
+                if (_isRendering)
+                {
+                    return;
+                }
+
+                _lastRenderTicks = Stopwatch.GetTimestamp();
+                CompositionTarget.Rendering += CompositionTarget_Rendering;
+                _isRendering = true;
+                return;
+            }
+
+            StopRendering();
+        }
+
+        private void StopRendering()
+        {
+            if (!_isRendering)
+            {
+                return;
+            }
+
             CompositionTarget.Rendering -= CompositionTarget_Rendering;
+            _isRendering = false;
+        }
 
         private void CompositionTarget_Rendering(object? sender, EventArgs e)
         {
@@ -229,15 +268,14 @@ namespace SennheiserTray
                     ? _focusTransitionTargetOpacity + liveLevel * 0.24
                     : normalOpacity;
             RainbowWashCanvas.Opacity = IsConnected ? 0.72 + liveLevel * 0.18 : 0.12;
-            OrbCore.Opacity = IsConnected ? 1 : 0.58;
         }
 
         private void CreateRainbowWash()
         {
-            const int glowCount = 24;
+            const int glowCount = 12;
             const double center = 84;
             const double radius = 48;
-            const double glowSize = 100;
+            const double glowSize = 122;
 
             for (int index = 0; index < glowCount; index++)
             {
@@ -304,23 +342,14 @@ namespace SennheiserTray
 
         private static System.Windows.Media.Color GetSpectrumColor(double elapsedSeconds)
         {
-            System.Windows.Media.Color[] colors =
-            {
-                System.Windows.Media.Color.FromRgb(0x25, 0xC9, 0xD0),
-                System.Windows.Media.Color.FromRgb(0x8D, 0x6B, 0xF5),
-                System.Windows.Media.Color.FromRgb(0xF0, 0x5D, 0xB5),
-                System.Windows.Media.Color.FromRgb(0xFF, 0x86, 0x55),
-                System.Windows.Media.Color.FromRgb(0x75, 0xD6, 0x84),
-                System.Windows.Media.Color.FromRgb(0x42, 0x9D, 0xF5)
-            };
             const double secondsPerColor = 3.8;
             double colorPosition = elapsedSeconds / secondsPerColor;
-            int currentColorIndex = (int)colorPosition % colors.Length;
-            int nextColorIndex = (currentColorIndex + 1) % colors.Length;
+            int currentColorIndex = (int)colorPosition % SpectrumColors.Length;
+            int nextColorIndex = (currentColorIndex + 1) % SpectrumColors.Length;
             double progress = colorPosition - Math.Floor(colorPosition);
             progress = progress * progress * (3 - 2 * progress);
-            System.Windows.Media.Color current = colors[currentColorIndex];
-            System.Windows.Media.Color next = colors[nextColorIndex];
+            System.Windows.Media.Color current = SpectrumColors[currentColorIndex];
+            System.Windows.Media.Color next = SpectrumColors[nextColorIndex];
             return System.Windows.Media.Color.FromRgb(
                 (byte)Math.Round(current.R + (next.R - current.R) * progress),
                 (byte)Math.Round(current.G + (next.G - current.G) * progress),
@@ -348,10 +377,10 @@ namespace SennheiserTray
         private void UpdateConnectionVisual()
         {
             RainbowWashCanvas.Opacity = IsConnected ? 0.72 : 0.12;
+            OrbCore.Opacity = IsConnected ? 1 : 0.58;
             if (!_animationsEnabled)
             {
                 OrbGlow.Opacity = IsConnected ? 0.38 : 0.12;
-                OrbCore.Opacity = IsConnected ? 1 : 0.58;
             }
         }
 
