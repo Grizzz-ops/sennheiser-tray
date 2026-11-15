@@ -36,7 +36,9 @@ namespace SennheiserTray
             nameof(ToggleCommand), typeof(ICommand), typeof(OrbControl));
 
         private readonly bool _animationsEnabled = SystemParameters.ClientAreaAnimation;
+        private readonly SolidColorBrush _orbAccentBrush = new(System.Windows.Media.Color.FromRgb(169, 87, 54));
         private long _lastRenderTicks;
+        private long _animationStartTicks;
         private long _pulseStartTicks;
         private long _focusTransitionStartTicks;
         private double _focusTransitionStartOpacity;
@@ -53,6 +55,9 @@ namespace SennheiserTray
         public OrbControl()
         {
             InitializeComponent();
+            _animationStartTicks = Stopwatch.GetTimestamp();
+            LevelArc.Stroke = _orbAccentBrush;
+            DialThumb.Fill = _orbAccentBrush;
             Loaded += OrbControl_Loaded;
             Unloaded += OrbControl_Unloaded;
             DrawLevelArc();
@@ -179,6 +184,8 @@ namespace SennheiserTray
 
             _lastRenderTicks = now;
             double elapsed = (now - _pulseStartTicks) / (double)Stopwatch.Frequency;
+            double colorElapsed = (now - _animationStartTicks) / (double)Stopwatch.Frequency;
+            UpdateOrbColor(colorElapsed);
             double connectPulse = elapsed is >= 0 and < 0.55
                 ? Math.Sin(Math.PI * elapsed / 0.55) * 0.16
                 : 0;
@@ -207,6 +214,45 @@ namespace SennheiserTray
                     ? _focusTransitionTargetOpacity + liveLevel * 0.18
                     : normalOpacity;
             OrbCore.Opacity = IsConnected ? 1 : 0.58;
+        }
+
+        private void UpdateOrbColor(double elapsedSeconds)
+        {
+            System.Windows.Media.Color color = GetSpectrumColor(elapsedSeconds);
+            _orbAccentBrush.Color = color;
+
+            if (OrbGlow.Fill is not RadialGradientBrush gradient || gradient.GradientStops.Count < 3)
+            {
+                return;
+            }
+
+            gradient.GradientStops[0].Color = System.Windows.Media.Color.FromArgb(0x62, color.R, color.G, color.B);
+            gradient.GradientStops[1].Color = System.Windows.Media.Color.FromArgb(0x20, color.R, color.G, color.B);
+            gradient.GradientStops[2].Color = System.Windows.Media.Color.FromArgb(0x00, color.R, color.G, color.B);
+        }
+
+        private static System.Windows.Media.Color GetSpectrumColor(double elapsedSeconds)
+        {
+            System.Windows.Media.Color[] colors =
+            {
+                System.Windows.Media.Color.FromRgb(0x6E, 0xA9, 0x98),
+                System.Windows.Media.Color.FromRgb(0x8B, 0x8D, 0xBC),
+                System.Windows.Media.Color.FromRgb(0xC4, 0x83, 0x7C),
+                System.Windows.Media.Color.FromRgb(0xCA, 0x9B, 0x68),
+                System.Windows.Media.Color.FromRgb(0x72, 0xA5, 0xB0)
+            };
+            const double secondsPerColor = 5;
+            double colorPosition = elapsedSeconds / secondsPerColor;
+            int currentColorIndex = (int)colorPosition % colors.Length;
+            int nextColorIndex = (currentColorIndex + 1) % colors.Length;
+            double progress = colorPosition - Math.Floor(colorPosition);
+            progress = progress * progress * (3 - 2 * progress);
+            System.Windows.Media.Color current = colors[currentColorIndex];
+            System.Windows.Media.Color next = colors[nextColorIndex];
+            return System.Windows.Media.Color.FromRgb(
+                (byte)Math.Round(current.R + (next.R - current.R) * progress),
+                (byte)Math.Round(current.G + (next.G - current.G) * progress),
+                (byte)Math.Round(current.B + (next.B - current.B) * progress));
         }
 
         private void UpdateModeRing()

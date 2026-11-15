@@ -131,7 +131,7 @@
                                         Margin="12,0,0,0"/>
                             </Grid>
 
-                            <Border Background="#101720" BorderThickness="0"
+                            <Border Background="{DynamicResource EqGraphBackgroundBrush}" BorderThickness="0"
                                     CornerRadius="8" Padding="4" Margin="0,0,0,8">
                                 <local:EqGraphControl Values="{Binding EqValues}" Height="150"/>
                             </Border>
@@ -140,37 +140,37 @@
                                     <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
                                     <ColumnDefinition/><ColumnDefinition/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="50 Hz" Foreground="#8FA2B2" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="250 Hz" Foreground="#8FA2B2" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="800 Hz" Foreground="#8FA2B2" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="3 kHz" Foreground="#8FA2B2" FontSize="10" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="4" Text="8 kHz" Foreground="#8FA2B2" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="50 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="250 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="800 Hz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="3 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="8 kHz" Foreground="{DynamicResource EqGraphLabelBrush}" FontSize="10" TextAlignment="Center"/>
                             </Grid>
 
                             <TextBlock Text="−6 to +6 dB" Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="10" HorizontalAlignment="Right" Margin="0,0,2,2"/>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="Bass" Foreground="#C5D1DA" Width="48" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Bass" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Eq1Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[0], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="Low mid" Foreground="#C5D1DA" Width="48" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Low mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Eq2Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[1], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="Mid" Foreground="#C5D1DA" Width="48" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Eq3Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[2], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3">
-                                <TextBlock Text="High mid" Foreground="#C5D1DA" Width="48" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="High mid" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Eq4Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[3], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
                             <DockPanel Margin="0,3,0,8">
-                                <TextBlock Text="Treble" Foreground="#C5D1DA" Width="48" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Treble" Foreground="{DynamicResource EqBandLabelBrush}" Width="48" FontSize="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding Eq5Text}" Foreground="{DynamicResource AccentBrush}" Width="48" DockPanel.Dock="Right" TextAlignment="Right" FontSize="10" VerticalAlignment="Center"/>
                                 <Slider Minimum="-60" Maximum="60" Value="{Binding EqValues[4], Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="5" IsSnapToTickEnabled="True" Style="{StaticResource GlowSliderStyle}"/>
                             </DockPanel>
@@ -210,7 +210,7 @@
                                 <TextBlock Text="Lab" Foreground="{DynamicResource TextPrimaryBrush}"
                                            FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </DockPanel>
-                            <TextBlock Text="ADAPTIVE EQ" Foreground="#CDEEFF" FontSize="10" FontWeight="Bold"/>
+                            <TextBlock Text="ADAPTIVE EQ" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold"/>
                             <TextBlock Text="Learns a steady profile from Windows playback, locally."
                                        Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
                                        TextWrapping="Wrap" Margin="0,4,0,10"/>
@@ -266,7 +266,7 @@
                             </StackPanel>
                             <TextBlock Text="LAST COMMAND" Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
-                            <TextBlock Text="{Binding LastCommand}" Foreground="#9EC8D9"
+                            <TextBlock Text="{Binding LastCommand}" Foreground="{DynamicResource StatusCommandBrush}"
                                        FontFamily="Consolas" FontSize="10"
                                        TextWrapping="Wrap" Margin="0,0,0,16"/>
                             <TextBlock Text="SETTINGS" Foreground="{DynamicResource TextSecondaryBrush}"

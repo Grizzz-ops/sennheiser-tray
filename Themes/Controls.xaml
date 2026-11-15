@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Style x:Key="ActionButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
-        <Setter Property="Foreground" Value="#D8F7FF"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="10,8"/>
@@ -18,14 +18,14 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="#263746"/>
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource SurfaceHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             <Setter TargetName="ButtonBorder" Property="BorderThickness" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="ButtonBorder" Property="Background" Value="#17445A"/>
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -47,7 +47,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Chip" Property="Background" Value="#202B38"/>
+                            <Setter TargetName="Chip" Property="Background" Value="{DynamicResource SurfaceRaisedBrush}"/>
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
@@ -85,7 +85,7 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsAdaptiveAnc}" Value="True">
-                <Setter Property="Background" Value="#17445A"/>
+                <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
             </DataTrigger>

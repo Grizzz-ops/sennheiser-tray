@@ -263,24 +263,24 @@ namespace SennheiserTray
         }
 
         public System.Windows.Media.Brush StatusForeground => _isConnected
-            ? MediaBrushes.LightGreen
+            ? new SolidColorBrush(MediaColor.FromRgb(63, 128, 96))
             : StatusText == "Connecting..." || StatusText == "Reconnecting..."
-                ? MediaBrushes.Orange
+                ? new SolidColorBrush(MediaColor.FromRgb(173, 108, 47))
                 : StatusText.Contains("failed", StringComparison.OrdinalIgnoreCase)
                     || StatusText.Contains("choose", StringComparison.OrdinalIgnoreCase)
                     || StatusText.Contains("no paired", StringComparison.OrdinalIgnoreCase)
-                    ? MediaBrushes.Gold
-                    : new SolidColorBrush(MediaColor.FromRgb(243, 248, 252));
+                    ? new SolidColorBrush(MediaColor.FromRgb(155, 112, 42))
+                    : new SolidColorBrush(MediaColor.FromRgb(37, 43, 42));
 
         public System.Windows.Media.Brush ConnectionBrush => _isConnected
-            ? MediaBrushes.LightGreen
+            ? new SolidColorBrush(MediaColor.FromRgb(63, 128, 96))
             : StatusText == "Connecting..." || StatusText == "Reconnecting..."
-                ? MediaBrushes.Orange
+                ? new SolidColorBrush(MediaColor.FromRgb(173, 108, 47))
                 : StatusText.Contains("failed", StringComparison.OrdinalIgnoreCase)
                     || StatusText.Contains("choose", StringComparison.OrdinalIgnoreCase)
                     || StatusText.Contains("no paired", StringComparison.OrdinalIgnoreCase)
-                    ? MediaBrushes.Gold
-                    : new SolidColorBrush(MediaColor.FromRgb(107, 114, 128));
+                    ? new SolidColorBrush(MediaColor.FromRgb(155, 112, 42))
+                    : new SolidColorBrush(MediaColor.FromRgb(120, 129, 125));
 
         public int? BatteryLevel
         {

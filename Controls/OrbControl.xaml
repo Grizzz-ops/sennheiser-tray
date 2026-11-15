@@ -12,20 +12,20 @@
         <Ellipse x:Name="ModeRing" Width="246" Height="246" Canvas.Left="12" Canvas.Top="12"
                  Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.2"
                  Opacity="0.22" IsHitTestVisible="False"/>
-        <Path x:Name="LevelArc" Stroke="{DynamicResource AccentBrush}"
+        <Path x:Name="LevelArc" Stroke="#A95736"
               StrokeThickness="2.5" StrokeStartLineCap="Round"
               StrokeEndLineCap="Round" IsHitTestVisible="False"/>
         <Ellipse x:Name="DialThumb" Width="12" Height="12"
-                 Fill="{DynamicResource AccentBrush}" Stroke="#EAFBFF"
+                 Fill="#A95736" Stroke="#FFFDF8"
                  StrokeThickness="1.5" IsHitTestVisible="False"/>
         <Ellipse x:Name="OrbGlow" Width="192" Height="192"
                  Canvas.Left="39" Canvas.Top="39" Opacity="0.2"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Color="#7055D9FF" Offset="0"/>
-                    <GradientStop Color="#2055D9FF" Offset="0.55"/>
-                    <GradientStop Color="#0055D9FF" Offset="1"/>
+                    <GradientStop x:Name="OrbGlowCenter" Color="#70C78B78" Offset="0"/>
+                    <GradientStop x:Name="OrbGlowMid" Color="#20C78B78" Offset="0.55"/>
+                    <GradientStop x:Name="OrbGlowEdge" Color="#00C78B78" Offset="1"/>
                 </RadialGradientBrush>
             </Ellipse.Fill>
             <Ellipse.RenderTransform>
@@ -37,9 +37,9 @@
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Color="#FF1C3948" Offset="0"/>
-                    <GradientStop Color="#FF15232F" Offset="0.8"/>
-                    <GradientStop Color="#FF101820" Offset="1"/>
+                    <GradientStop Color="#FFFFFDF8" Offset="0"/>
+                    <GradientStop Color="#FFF6F0E7" Offset="0.8"/>
+                    <GradientStop Color="#FFECE5DB" Offset="1"/>
                 </RadialGradientBrush>
             </Ellipse.Fill>
             <Ellipse.RenderTransform>
@@ -49,15 +49,15 @@
         <StackPanel Width="130" Canvas.Left="70" Canvas.Top="112"
                     IsHitTestVisible="False">
             <TextBlock x:Name="CenterLabel" Text="Balanced"
-                       Foreground="#F3F8FC" FontSize="20"
+                       Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20"
                        FontWeight="SemiBold" TextAlignment="Center"/>
             <TextBlock x:Name="LevelCaption" Text="50"
-                       Foreground="#9BB2C2" FontSize="10"
+                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"
                        Margin="0,5,0,0" TextAlignment="Center"/>
         </StackPanel>
-        <TextBlock Text="Noise" Foreground="#94A5B5" FontSize="10"
+        <TextBlock Text="Noise" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                    Canvas.Left="54" Canvas.Top="0" IsHitTestVisible="False"/>
-        <TextBlock Text="Awareness" Foreground="#94A5B5" FontSize="10"
+        <TextBlock Text="Awareness" Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
                    Canvas.Right="35" Canvas.Top="0" IsHitTestVisible="False"/>
     </Canvas>
 </UserControl>

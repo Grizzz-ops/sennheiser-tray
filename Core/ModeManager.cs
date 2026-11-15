@@ -219,19 +219,19 @@ namespace SennheiserTray
         private static IEnumerable<SoundMode> CreateBuiltInModes()
         {
             yield return new SoundMode(
-                "Music", "Music", "\uE8D6", "#38D9FF",
+                "Music", "Music", "\uE8D6", "#2C7A68",
                 AncModeRules.Custom, 50, new[] { 0, 0, 0, 0, 0 }, false);
             yield return new SoundMode(
-                "Movie", "Movie", "\uE8B2", "#FFB347",
+                "Movie", "Movie", "\uE8B2", "#AD6C2F",
                 AncModeRules.Custom, 10, new[] { 10, 5, 0, 10, 10 }, false);
             yield return new SoundMode(
-                "Gaming", "Gaming", "\uE7FC", "#4ADE80",
+                "Gaming", "Gaming", "\uE7FC", "#3F8060",
                 AncModeRules.Custom, 50, new[] { -10, -5, 10, 25, 15 }, false);
             yield return new SoundMode(
-                "Calls", "Calls", "\uE717", "#A78BFA",
+                "Calls", "Calls", "\uE717", "#7760A5",
                 AncModeRules.Custom, 65, new[] { -15, 0, 15, 20, 0 }, false);
             yield return new SoundMode(
-                "Focus", "Focus", "\uE8A7", "#E6EEF5",
+                "Focus", "Focus", "\uE8A7", "#59645E",
                 AncModeRules.Custom, 0, new[] { 0, 0, 0, 0, 0 }, false);
         }
     }
