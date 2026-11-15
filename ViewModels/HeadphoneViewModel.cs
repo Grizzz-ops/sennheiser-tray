@@ -290,6 +290,7 @@ namespace SennheiserTray
                 if (SetProperty(ref _batteryLevel, value))
                 {
                     OnPropertyChanged(nameof(BatteryText));
+                    OnPropertyChanged(nameof(BatteryEstimateStatus));
                 }
             }
         }
@@ -302,6 +303,31 @@ namespace SennheiserTray
 
         public string BatteryToolTip =>
             "Time and charging estimates are inferred from recent battery readings, not reported by the headset. Battery health and charging control are not available.";
+
+        public string BatteryEstimateStatus
+        {
+            get
+            {
+                if (!IsConnected)
+                {
+                    return "Connect the headset to estimate battery time.";
+                }
+
+                if (BatteryLevel == null)
+                {
+                    return "Waiting for a battery reading from the headset.";
+                }
+
+                if (BatteryEstimateText.Length > 0)
+                {
+                    return BatteryEstimateText;
+                }
+
+                return _batteryTrendEstimator.SampleCount < 4
+                    ? $"Learning battery use · {_batteryTrendEstimator.SampleCount}/4 readings"
+                    : "Waiting for battery level to change before estimating.";
+            }
+        }
 
         private string BatteryEstimateText { get; set; } = "";
 
@@ -367,6 +393,7 @@ namespace SennheiserTray
                         BatteryLevel = null;
                         BatteryEstimateText = "";
                         OnPropertyChanged(nameof(BatteryText));
+                        OnPropertyChanged(nameof(BatteryEstimateStatus));
                     }
                     else
                     {
@@ -1382,6 +1409,7 @@ namespace SennheiserTray
 
             BatteryEstimateText = estimate;
             OnPropertyChanged(nameof(BatteryText));
+            OnPropertyChanged(nameof(BatteryEstimateStatus));
         }
 
         private async void BatteryPollTimer_Tick(object? sender, EventArgs e)

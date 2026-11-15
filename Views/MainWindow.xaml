@@ -210,6 +210,21 @@
                                 <TextBlock Text="Lab" Foreground="{DynamicResource TextPrimaryBrush}"
                                            FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </DockPanel>
+                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10"
+                                    Padding="12" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="BATTERY LIFE" Foreground="{DynamicResource AccentBrush}"
+                                               FontSize="10" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding BatteryText}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="16" FontWeight="SemiBold" Margin="0,5,0,2"/>
+                                    <TextBlock Text="{Binding BatteryEstimateStatus}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="Approximate estimate from recent battery changes. Keep the app connected; battery health and charging control are not available."
+                                               Foreground="{DynamicResource TextMutedBrush}" FontSize="10"
+                                               TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
                             <TextBlock Text="ADAPTIVE EQ" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold"/>
                             <TextBlock Text="Learns a steady profile from Windows playback, locally."
                                        Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10"

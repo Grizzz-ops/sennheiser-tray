@@ -2,12 +2,13 @@ namespace SennheiserTray
 {
     public sealed class BatteryTrendEstimator
     {
-        private static readonly TimeSpan MinimumSampleWindow = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan MinimumSampleWindow = TimeSpan.FromMinutes(6);
         private static readonly TimeSpan MaximumSampleAge = TimeSpan.FromHours(6);
         private static readonly TimeSpan MaximumEstimate = TimeSpan.FromHours(72);
         private const int MaximumSamples = 200;
         private const double MinimumTrendPercentPerMinute = 0.02;
         private readonly Queue<(DateTimeOffset Timestamp, int Level)> _samples = new();
+        public int SampleCount => _samples.Count;
 
         public void AddSample(DateTimeOffset timestamp, int level)
         {

@@ -12,7 +12,7 @@ The interface uses a warm, neutral palette with restrained, slowly shifting orb 
 - Select Music, Movie, Gaming, Calls, or Focus sound modes.
 - Adjust ANC and Adaptive ANC when supported by the headset.
 - View battery level when the headset reports it over GAIA; unsupported or unavailable readings are shown as `Battery --`.
-- See estimated time to empty or full after enough recent readings show a clear battery trend. These estimates are approximate and the charging state is inferred from the trend.
+- See a battery-life estimate in the Lab screen after enough recent readings show a clear battery trend. It needs at least four readings over six minutes and a detectable level change; the estimate and charging state are approximate and inferred from the trend.
 - Adjust the current Windows default playback device volume from the Lab settings.
 - Tune five equalizer bands and toggle Bass Boost and Bass Impact.
 - Enable Adaptive EQ, which learns a steady profile from Windows playback locally. Playback analysis does not capture microphone audio or send data over the network.
