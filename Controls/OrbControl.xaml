@@ -32,6 +32,12 @@
                 <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1"/>
             </Ellipse.RenderTransform>
         </Ellipse>
+        <Canvas x:Name="RainbowRingCanvas" Width="310" Height="310" Opacity="0.8"
+                RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
+            <Canvas.RenderTransform>
+                <ScaleTransform x:Name="RainbowRingScale" ScaleX="1" ScaleY="1"/>
+            </Canvas.RenderTransform>
+        </Canvas>
         <Ellipse x:Name="OrbCore" Width="168" Height="168"
                  Canvas.Left="71" Canvas.Top="71" Opacity="1"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">

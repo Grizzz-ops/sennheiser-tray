@@ -2,7 +2,7 @@
 
 A Windows desktop app for controlling compatible Sennheiser headphones over Bluetooth. It provides sound modes, noise-control settings, equalizer tuning, and local playback analysis.
 
-The interface uses a warm, neutral palette with restrained, slowly shifting orb colors for a calm listening-focused appearance.
+The interface uses a warm, neutral palette with a full-spectrum rainbow ring around the audio-responsive orb.
 
 > **Screenshot:** Add a screenshot of the app at `docs/images/sennheiser-tray.png` and embed it here.
 
