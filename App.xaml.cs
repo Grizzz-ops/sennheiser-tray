@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
@@ -16,6 +17,13 @@ namespace SennheiserTray
         private CancellationTokenSource? _pipeCancellation;
         private MainWindow? _mainWindow;
         private bool _ownsMutex;
+        private bool _restartRequested;
+
+        public void RequestRestart()
+        {
+            _restartRequested = true;
+            Shutdown();
+        }
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -178,6 +186,25 @@ namespace SennheiserTray
             _instanceMutex?.Dispose();
             _instanceMutex = null;
             base.OnExit(e);
+
+            if (_restartRequested)
+            {
+                try
+                {
+                    string executablePath = Environment.ProcessPath
+                        ?? throw new InvalidOperationException("The application executable path is unavailable.");
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = executablePath,
+                        WorkingDirectory = AppContext.BaseDirectory,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogException("Could not restart Sennheiser Control", ex);
+                }
+            }
         }
     }
 }

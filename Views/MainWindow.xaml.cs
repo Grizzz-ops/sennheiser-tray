@@ -185,6 +185,13 @@ namespace SennheiserTray
             menu.Items.Add(volumeMenu);
 
             menu.Items.Add(new WinForms.ToolStripSeparator());
+            menu.Items.Add("Restart", null, (_, _) =>
+            {
+                if (System.Windows.Application.Current is App app)
+                {
+                    app.RequestRestart();
+                }
+            });
             menu.Items.Add("Exit", null, (_, _) => ExitApplication());
             _trayIcon.ContextMenuStrip = menu;
         }

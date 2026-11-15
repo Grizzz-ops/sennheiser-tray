@@ -45,7 +45,7 @@ dotnet run --project .\SennheiserTray.csproj
 3. Use **Connect** and choose your headset if it is not connected automatically.
 4. Choose a sound mode, then use the ANC control, **Tune**, or **Lab** to adjust available settings.
 
-Press **Ctrl+K** to open Tune and **Escape** to close the current drawer. Use the system-tray icon's right-click menu for quick controls. Launching the app again brings the existing instance forward.
+Press **Ctrl+K** to open Tune and **Escape** to close the current drawer. Use the system-tray icon's right-click menu for quick controls, restart, or exit. Launching the app again brings the existing instance forward.
 
 ## ACCENTUM Plus testing
 
