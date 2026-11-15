@@ -19,6 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\SennheiserTray.ico" />
+    <Resource Include="Assets\SennheiserTray.ico;Assets\SennheiserTray.png" />
   </ItemGroup>
 </Project>

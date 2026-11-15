@@ -27,17 +27,22 @@
             <Grid Grid.Row="0" Margin="16,8,16,2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Ellipse Width="8" Height="8" Fill="{Binding ConnectionBrush}"
+                <Image Grid.Column="0" Source="pack://application:,,,/SennheiserTray;component/Assets/SennheiserTray.png"
+                       Width="24" Height="24" Stretch="Uniform" Margin="0,0,9,0"
+                       VerticalAlignment="Center"
+                       AutomationProperties.Name="Sennheiser headset widget icon"/>
+                <Ellipse Grid.Column="1" Width="8" Height="8" Fill="{Binding ConnectionBrush}"
                          VerticalAlignment="Center" Margin="0,0,9,0"/>
-                <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+                <TextBlock Grid.Column="2" Text="{Binding StatusText}"
                            Foreground="{Binding StatusForeground}" FontSize="12"
                            FontWeight="SemiBold" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
                             Margin="8,0"
                             Visibility="{Binding IsConnected, Converter={StaticResource BooleanToVisibilityConverter}}"
                             ToolTip="{Binding BatteryToolTip}">
@@ -48,7 +53,7 @@
                     <TextBlock Text="{Binding BatteryText}" Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="10" VerticalAlignment="Center"/>
                 </StackPanel>
-                <Button Grid.Column="3" Content="Connect" Command="{Binding ConnectCommand}"
+                <Button Grid.Column="4" Content="Connect" Command="{Binding ConnectCommand}"
                         Style="{StaticResource ActionButtonStyle}" Padding="8,4"
                         Visibility="{Binding IsDisconnected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </Grid>
