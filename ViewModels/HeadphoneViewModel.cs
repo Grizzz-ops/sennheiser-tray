@@ -317,9 +317,22 @@ namespace SennheiserTray
             {
                 if (SetProperty(ref _statusText, value))
                 {
+                    OnPropertyChanged(nameof(HeaderText));
                     OnPropertyChanged(nameof(StatusForeground));
                     OnPropertyChanged(nameof(ConnectionBrush));
                 }
+            }
+        }
+
+        public string HeaderText
+        {
+            get
+            {
+                string? headsetName = IsConnected
+                    ? _service.ConnectedDeviceName
+                    : Devices.FirstOrDefault(device =>
+                        string.Equals(device.Id, SelectedDeviceId, StringComparison.Ordinal))?.Name;
+                return string.IsNullOrWhiteSpace(headsetName) ? StatusText : headsetName;
             }
         }
 
@@ -450,7 +463,13 @@ namespace SennheiserTray
         public string? SelectedDeviceId
         {
             get => _selectedDeviceId;
-            set => SetProperty(ref _selectedDeviceId, value);
+            set
+            {
+                if (SetProperty(ref _selectedDeviceId, value))
+                {
+                    OnPropertyChanged(nameof(HeaderText));
+                }
+            }
         }
 
         public bool IsConnected
@@ -477,6 +496,7 @@ namespace SennheiserTray
 
                     OnPropertyChanged(nameof(StatusForeground));
                     OnPropertyChanged(nameof(ConnectionBrush));
+                    OnPropertyChanged(nameof(HeaderText));
                     OnPropertyChanged(nameof(ConnectButtonText));
                     OnPropertyChanged(nameof(IsDisconnected));
                     ConnectCommand.NotifyCanExecuteChanged();

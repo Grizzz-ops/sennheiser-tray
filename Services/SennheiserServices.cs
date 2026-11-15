@@ -38,9 +38,18 @@ namespace SennheiserTray
             string selector = RfcommDeviceService.GetDeviceSelector(
                 RfcommServiceId.FromUuid(SennheiserUuid));
             DeviceInformationCollection devices = await DeviceInformation.FindAllAsync(selector);
-            return devices
-                .Select(device => new SennheiserDevice(device.Id, device.Name))
-                .ToArray();
+            var availableDevices = new List<SennheiserDevice>(devices.Count);
+            foreach (DeviceInformation device in devices)
+            {
+                using RfcommDeviceService? service =
+                    await RfcommDeviceService.FromIdAsync(device.Id);
+                string headsetName = service?.Device?.Name ?? device.Name;
+                availableDevices.Add(new SennheiserDevice(
+                    device.Id,
+                    string.IsNullOrWhiteSpace(headsetName) ? device.Name : headsetName));
+            }
+
+            return availableDevices;
         }
 
         public async Task<bool> ConnectAsync(string deviceId)

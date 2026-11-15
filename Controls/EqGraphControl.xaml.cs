@@ -19,6 +19,12 @@ namespace SennheiserTray
             typeof(EqGraphControl),
             new PropertyMetadata(null, OnValuesChanged));
 
+        public static readonly DependencyProperty AccentBrushProperty = DependencyProperty.Register(
+            nameof(AccentBrush),
+            typeof(System.Windows.Media.Brush),
+            typeof(EqGraphControl),
+            new PropertyMetadata(null, OnAccentBrushChanged));
+
         private int _draggingBand = -1;
         private int _hoveredBand = -1;
         private Point _lastPointer = new(-1, -1);
@@ -34,6 +40,17 @@ namespace SennheiserTray
             get => (IList<double>?)GetValue(ValuesProperty);
             set => SetValue(ValuesProperty, value);
         }
+
+        public System.Windows.Media.Brush? AccentBrush
+        {
+            get => (System.Windows.Media.Brush?)GetValue(AccentBrushProperty);
+            set => SetValue(AccentBrushProperty, value);
+        }
+
+        private static void OnAccentBrushChanged(
+            DependencyObject dependencyObject,
+            DependencyPropertyChangedEventArgs e) =>
+            ((EqGraphControl)dependencyObject).DrawGraph();
 
         private static void OnValuesChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
         {
@@ -72,6 +89,9 @@ namespace SennheiserTray
             double bottom = height - 14;
             double plotHeight = bottom - top;
             Point[] points = new Point[values.Count];
+            Color accent = GetAccentColor();
+            Color lightAccent = BlendWithWhite(accent, 0.65);
+            Color markerAccent = BlendWithWhite(accent, 0.35);
 
             for (int i = 0; i < values.Count; i++)
             {
@@ -90,7 +110,11 @@ namespace SennheiserTray
                     X2 = right,
                     Y1 = y,
                     Y2 = y,
-                    Stroke = new SolidColorBrush(i == 2 ? Color.FromRgb(66, 97, 116) : Color.FromRgb(37, 53, 67)),
+                    Stroke = new SolidColorBrush(Color.FromArgb(
+                        i == 2 ? (byte)68 : (byte)28,
+                        accent.R,
+                        accent.G,
+                        accent.B)),
                     StrokeThickness = i == 2 ? 1.2 : 0.7,
                     StrokeDashArray = i == 2 ? null : new DoubleCollection { 2, 3 },
                     IsHitTestVisible = false
@@ -105,7 +129,7 @@ namespace SennheiserTray
                     X2 = point.X,
                     Y1 = top,
                     Y2 = bottom,
-                    Stroke = new SolidColorBrush(Color.FromArgb(75, 74, 103, 123)),
+                    Stroke = new SolidColorBrush(Color.FromArgb(22, accent.R, accent.G, accent.B)),
                     StrokeThickness = 0.7,
                     IsHitTestVisible = false
                 });
@@ -131,15 +155,15 @@ namespace SennheiserTray
             {
                 Data = fillGeometry,
                 Fill = new LinearGradientBrush(
-                    Color.FromArgb(75, 47, 201, 244),
-                    Color.FromArgb(3, 47, 201, 244),
+                    Color.FromArgb(65, accent.R, accent.G, accent.B),
+                    Color.FromArgb(3, accent.R, accent.G, accent.B),
                     90),
                 IsHitTestVisible = false
             });
             GraphCanvas.Children.Add(new Path
             {
                 Data = curve,
-                Stroke = new SolidColorBrush(Color.FromRgb(74, 220, 255)),
+                Stroke = new SolidColorBrush(accent),
                 StrokeThickness = 2.2,
                 StrokeStartLineCap = PenLineCap.Round,
                 StrokeEndLineCap = PenLineCap.Round,
@@ -154,8 +178,8 @@ namespace SennheiserTray
                 {
                     GradientStops = new GradientStopCollection
                     {
-                        new GradientStop(Color.FromArgb(65, 50, 201, 255), 0),
-                        new GradientStop(Color.FromArgb(0, 50, 201, 255), 1)
+                        new GradientStop(Color.FromArgb(55, accent.R, accent.G, accent.B), 0),
+                        new GradientStop(Color.FromArgb(0, accent.R, accent.G, accent.B), 1)
                     }
                 },
                 IsHitTestVisible = false,
@@ -177,15 +201,13 @@ namespace SennheiserTray
                 {
                     Width = size,
                     Height = size,
-                    Fill = new SolidColorBrush(hovered
-                        ? Color.FromRgb(222, 251, 255)
-                        : Color.FromRgb(83, 223, 255)),
-                    Stroke = new SolidColorBrush(Color.FromRgb(224, 250, 255)),
+                    Fill = new SolidColorBrush(hovered ? lightAccent : accent),
+                    Stroke = new SolidColorBrush(BlendWithWhite(accent, 0.8)),
                     StrokeThickness = 1.4,
                     Effect = hovered
                         ? new DropShadowEffect
                         {
-                            Color = Color.FromRgb(54, 211, 255),
+                            Color = markerAccent,
                             BlurRadius = 14,
                             ShadowDepth = 0,
                             Opacity = 0.8
@@ -198,6 +220,17 @@ namespace SennheiserTray
                 GraphCanvas.Children.Add(marker);
             }
         }
+
+        private Color GetAccentColor() =>
+            AccentBrush is SolidColorBrush solidBrush
+                ? solidBrush.Color
+                : Colors.SkyBlue;
+
+        private static Color BlendWithWhite(Color color, double amount) =>
+            Color.FromRgb(
+                (byte)(color.R + (byte.MaxValue - color.R) * amount),
+                (byte)(color.G + (byte.MaxValue - color.G) * amount),
+                (byte)(color.B + (byte.MaxValue - color.B) * amount));
 
         private static void AddCurveSegments(PathFigure figure, Point[] points)
         {

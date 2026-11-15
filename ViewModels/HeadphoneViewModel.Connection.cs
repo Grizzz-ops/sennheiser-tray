@@ -68,6 +68,7 @@ namespace SennheiserTray
                     ?? devices.FirstOrDefault(
                         device => string.Equals(device.Id, rememberedDeviceId, StringComparison.Ordinal))?.Id
                     ?? (devices.Count == 1 ? devices[0].Id : null);
+                OnPropertyChanged(nameof(HeaderText));
 
                 if (devices.Count == 0)
                 {
