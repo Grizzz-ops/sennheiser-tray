@@ -4,7 +4,15 @@ A Windows desktop app for controlling compatible Sennheiser headphones over Blue
 
 The interface uses a warm, neutral palette with a softly blended, continuously shifting RGB wash over the audio-responsive orb.
 
-> **Screenshot:** Add a screenshot of the app at `docs/images/sennheiser-tray.png` and embed it here.
+## Screenshots
+
+### Home
+
+![Sennheiser Tray home screen showing the audio orb and headphone controls](docs/images/home-screen.png)
+
+### Lab
+
+![Sennheiser Tray Lab screen showing battery information and settings](docs/images/lab-screen.png)
 
 ## Features
 
