@@ -48,6 +48,7 @@ namespace SennheiserTray
         private int? _batteryLevel;
         private bool? _autoAncEnabled;
         private bool _isConnected;
+        private bool _isDarkTheme;
         private bool _bassBoostEnabled;
         private bool _isBassImpactEnabled;
         private bool _isBassImpactBusy;
@@ -141,6 +142,7 @@ namespace SennheiserTray
             ToggleMicrophoneMuteCommand = new RelayCommand(_ => ToggleMicrophoneMute());
             FocusCycleCommand = new RelayCommand(_ => ToggleFocusCycle(), _ => IsFocusMode);
             DismissGamingHintCommand = new RelayCommand(_ => DismissGamingHint());
+            ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
             SelectModeCommand = new RelayCommand(async parameter =>
             {
                 if (parameter is string modeId)
@@ -198,6 +200,8 @@ namespace SennheiserTray
             {
                 _settingsStore.Load();
                 _isGamingLatencyHintDismissed = _settingsStore.GamingLatencyHintDismissed;
+                _isDarkTheme = _settingsStore.IsDarkTheme;
+                ThemeManager.Apply(_isDarkTheme);
             }
             catch (Exception ex)
             {
@@ -242,6 +246,7 @@ namespace SennheiserTray
         public RelayCommand ToggleMicrophoneMuteCommand { get; }
         public RelayCommand FocusCycleCommand { get; }
         public RelayCommand DismissGamingHintCommand { get; }
+        public RelayCommand ToggleThemeCommand { get; }
         public RelayCommand SelectModeCommand { get; }
         public RelayCommand ToggleModePinCommand { get; }
         public RelayCommand RestorePreviousModeCommand { get; }
@@ -404,6 +409,7 @@ namespace SennheiserTray
                         OnPropertyChanged(nameof(BatteryText));
                         OnPropertyChanged(nameof(BatteryEstimateStatus));
                     }
+
                     else
                     {
                         _batteryPollTimer.Start();
@@ -418,6 +424,28 @@ namespace SennheiserTray
                     BassImpactCommand.NotifyCanExecuteChanged();
                     AdaptiveEqCommand.NotifyCanExecuteChanged();
                 }
+            }
+        }
+
+        public bool IsDarkTheme => _isDarkTheme;
+        public string ThemeToggleText => IsDarkTheme ? "Switch to day theme" : "Switch to night theme";
+
+        private void ToggleTheme()
+        {
+            bool useDarkTheme = !IsDarkTheme;
+            try
+            {
+                _settingsStore.SetDarkTheme(useDarkTheme);
+                ThemeManager.Apply(useDarkTheme);
+                _isDarkTheme = useDarkTheme;
+                OnPropertyChanged(nameof(IsDarkTheme));
+                OnPropertyChanged(nameof(ThemeToggleText));
+                LastCommand = useDarkTheme ? "Appearance -> Night theme enabled." : "Appearance -> Day theme enabled.";
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogException("Could not change the application theme", ex);
+                LastCommand = $"THEME CHANGE ERROR -> {ex.Message}";
             }
         }
 

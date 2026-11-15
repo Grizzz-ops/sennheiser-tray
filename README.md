@@ -19,6 +19,7 @@ The interface uses a warm, neutral palette with a softly blended, continuously s
 - Tune five equalizer bands and toggle Bass Boost and Bass Impact.
 - Enable Adaptive EQ, which learns a steady profile from Windows playback locally. Playback analysis does not capture microphone audio or send data over the network.
 - Use Focus Cycle in Focus mode.
+- Switch between the warm day theme and a low-glare dark night theme; the choice is saved locally.
 
 Available controls depend on the headset model and firmware. Pairing alone does not guarantee that a headset exposes the control service this app requires.
 

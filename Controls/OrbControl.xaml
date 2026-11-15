@@ -37,9 +37,9 @@
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Color="#FFFFFDF8" Offset="0"/>
-                    <GradientStop Color="#FFF6F0E7" Offset="0.8"/>
-                    <GradientStop Color="#FFECE5DB" Offset="1"/>
+                    <GradientStop Color="{DynamicResource OrbCoreCenterColor}" Offset="0"/>
+                    <GradientStop Color="{DynamicResource OrbCoreMiddleColor}" Offset="0.8"/>
+                    <GradientStop Color="{DynamicResource OrbCoreEdgeColor}" Offset="1"/>
                 </RadialGradientBrush>
             </Ellipse.Fill>
             <Ellipse.RenderTransform>

@@ -12,6 +12,7 @@ namespace SennheiserTray
         private readonly object _gate = new();
 
         public bool GamingLatencyHintDismissed { get; private set; }
+        public bool IsDarkTheme { get; private set; }
 
         public void Load()
         {
@@ -20,12 +21,14 @@ namespace SennheiserTray
                 if (!File.Exists(SettingsPath))
                 {
                     GamingLatencyHintDismissed = false;
+                    IsDarkTheme = false;
                     return;
                 }
 
                 SettingsData? data = JsonSerializer.Deserialize<SettingsData>(
                     File.ReadAllText(SettingsPath));
                 GamingLatencyHintDismissed = data?.GamingLatencyHintDismissed ?? false;
+                IsDarkTheme = data?.IsDarkTheme ?? false;
             }
         }
 
@@ -33,16 +36,30 @@ namespace SennheiserTray
         {
             lock (_gate)
             {
-                Directory.CreateDirectory(SettingsDirectory);
-                string temporaryPath = SettingsPath + ".tmp";
-                File.WriteAllText(
-                    temporaryPath,
-                    JsonSerializer.Serialize(new SettingsData(true)));
-                File.Move(temporaryPath, SettingsPath, overwrite: true);
+                SaveSettings(gamingLatencyHintDismissed: true, isDarkTheme: IsDarkTheme);
                 GamingLatencyHintDismissed = true;
             }
         }
 
-        private sealed record SettingsData(bool GamingLatencyHintDismissed);
+        public void SetDarkTheme(bool isDarkTheme)
+        {
+            lock (_gate)
+            {
+                SaveSettings(GamingLatencyHintDismissed, isDarkTheme);
+                IsDarkTheme = isDarkTheme;
+            }
+        }
+
+        private static void SaveSettings(bool gamingLatencyHintDismissed, bool isDarkTheme)
+        {
+            Directory.CreateDirectory(SettingsDirectory);
+            string temporaryPath = SettingsPath + ".tmp";
+            File.WriteAllText(
+                temporaryPath,
+                JsonSerializer.Serialize(new SettingsData(gamingLatencyHintDismissed, isDarkTheme)));
+            File.Move(temporaryPath, SettingsPath, overwrite: true);
+        }
+
+        private sealed record SettingsData(bool GamingLatencyHintDismissed, bool IsDarkTheme = false);
     }
 }

@@ -13,4 +13,7 @@
     <SolidColorBrush x:Key="EqGraphLabelBrush" Color="#78817D"/>
     <SolidColorBrush x:Key="EqBandLabelBrush" Color="#515A56"/>
     <SolidColorBrush x:Key="StatusCommandBrush" Color="#4F6460"/>
+    <Color x:Key="OrbCoreCenterColor">#FFFFFDF8</Color>
+    <Color x:Key="OrbCoreMiddleColor">#FFF6F0E7</Color>
+    <Color x:Key="OrbCoreEdgeColor">#FFECE5DB</Color>
 </ResourceDictionary>
