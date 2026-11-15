@@ -12,12 +12,20 @@
         <Ellipse x:Name="ModeRing" Width="284" Height="284" Canvas.Left="13" Canvas.Top="13"
                  Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.2"
                  Opacity="0.22" IsHitTestVisible="False"/>
+        <Path x:Name="LevelArcGlow" Stroke="#40A95736"
+              StrokeThickness="12" StrokeStartLineCap="Round"
+              StrokeEndLineCap="Round" IsHitTestVisible="False"/>
         <Path x:Name="LevelArc" Stroke="#A95736"
               StrokeThickness="3.2" StrokeStartLineCap="Round"
               StrokeEndLineCap="Round" IsHitTestVisible="False"/>
         <Ellipse x:Name="DialThumb" Width="14" Height="14"
                  Fill="#A95736" Stroke="#FFFDF8"
-                 StrokeThickness="1.5" IsHitTestVisible="False"/>
+                 StrokeThickness="1.5" IsHitTestVisible="False"
+                 RenderTransformOrigin="0.5,0.5">
+            <Ellipse.RenderTransform>
+                <ScaleTransform x:Name="DialThumbScale" ScaleX="1" ScaleY="1"/>
+            </Ellipse.RenderTransform>
+        </Ellipse>
         <Ellipse x:Name="OrbGlow" Width="222" Height="222"
                  Canvas.Left="44" Canvas.Top="44" Opacity="0.2"
                  RenderTransformOrigin="0.5,0.5" IsHitTestVisible="False">

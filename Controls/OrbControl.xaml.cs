@@ -59,6 +59,7 @@ namespace SennheiserTray
             CreateRainbowWash();
             _animationStartTicks = Stopwatch.GetTimestamp();
             LevelArc.Stroke = _orbAccentBrush;
+            LevelArcGlow.Stroke = _orbAccentBrush;
             DialThumb.Fill = _orbAccentBrush;
             Loaded += OrbControl_Loaded;
             Unloaded += OrbControl_Unloaded;
@@ -209,6 +210,12 @@ namespace SennheiserTray
             GlowScale.ScaleY = scale;
             RainbowWashScale.ScaleX = scale;
             RainbowWashScale.ScaleY = scale;
+            double dialBounce = liveLevel * 0.9;
+            LevelArc.StrokeThickness = 3.2 + dialBounce;
+            LevelArcGlow.StrokeThickness = 12 + liveLevel * 14;
+            LevelArcGlow.Opacity = 0.12 + liveLevel * 0.38;
+            DialThumbScale.ScaleX = 1 + liveLevel * 0.65;
+            DialThumbScale.ScaleY = DialThumbScale.ScaleX;
             CoreScale.ScaleX = 1 + connectPulse * 0.3 + liveLevel * 0.1;
             CoreScale.ScaleY = CoreScale.ScaleX;
             double normalOpacity = (IsConnected ? 0.42 + liveLevel * 0.5 : 0.12) + connectPulse;
@@ -379,6 +386,7 @@ namespace SennheiserTray
             var geometry = new PathGeometry();
             geometry.Figures.Add(figure);
             LevelArc.Data = geometry;
+            LevelArcGlow.Data = geometry.Clone();
             Canvas.SetLeft(DialThumb, end.X - DialThumb.Width / 2);
             Canvas.SetTop(DialThumb, end.Y - DialThumb.Height / 2);
             LevelCaption.Text = $"{(int)Math.Round(Level)}";
